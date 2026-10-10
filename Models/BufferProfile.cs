@@ -10,6 +10,9 @@ public class BufferProfile : INotifyPropertyChanged
     private string _formattedUsername = "@usuario";
     private string? _avatar;
     private bool _isSelected = true;
+    private int _pendingUpdatesCount = 0;
+    private int _sentUpdatesCount = 0;
+    private string _timezone = "America/Sao_Paulo";
 
     public string Id
     {
@@ -36,6 +39,8 @@ public class BufferProfile : INotifyPropertyChanged
         "threads" => "Threads",
         "bluesky" => "Bluesky",
         "instagram" => "Instagram",
+        "facebook" => "Facebook",
+        "pinterest" => "Pinterest",
         _ => _service ?? "Social"
     };
 
@@ -56,6 +61,37 @@ public class BufferProfile : INotifyPropertyChanged
         get => _isSelected;
         set => SetField(ref _isSelected, value);
     }
+
+    public int PendingUpdatesCount
+    {
+        get => _pendingUpdatesCount;
+        set
+        {
+            if (SetField(ref _pendingUpdatesCount, value))
+            {
+                OnPropertyChanged(nameof(QueueStatusText));
+            }
+        }
+    }
+
+    public int SentUpdatesCount
+    {
+        get => _sentUpdatesCount;
+        set => SetField(ref _sentUpdatesCount, value);
+    }
+
+    public string Timezone
+    {
+        get => _timezone;
+        set => SetField(ref _timezone, value);
+    }
+
+    public string QueueStatusText => _pendingUpdatesCount switch
+    {
+        0 => "Fila vazia",
+        1 => "1 post na fila",
+        _ => $"{_pendingUpdatesCount} posts na fila"
+    };
 
     public event PropertyChangedEventHandler? PropertyChanged;
 

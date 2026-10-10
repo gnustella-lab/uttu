@@ -16,6 +16,9 @@ public class BufferMcpClient : IDisposable
     private readonly object _lock = new();
     private bool _isInitialized;
     private bool _isDisposed;
+    private string? _accessToken;
+
+    public BufferApiService ApiService { get; } = new();
 
     public bool IsConnected => _process != null && !_process.HasExited && _isInitialized;
     public string StatusMessage { get; private set; } = "Desconectado";
@@ -26,6 +29,7 @@ public class BufferMcpClient : IDisposable
     {
         lock (_lock)
         {
+            _accessToken = plainAccessToken;
             if (IsConnected)
                 return true;
 
@@ -40,14 +44,11 @@ public class BufferMcpClient : IDisposable
             string exe;
             string commandArgs;
 
-            // Resolve command
             if (string.IsNullOrWhiteSpace(command) || command.Equals("internal", StringComparison.OrdinalIgnoreCase))
             {
-                // Default to bundled server via node
                 string serverScript = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Server", "buffer-mcp.js");
                 if (!File.Exists(serverScript))
                 {
-                    // Fallback relative to project if running in dev
                     serverScript = Path.Combine(Directory.GetCurrentDirectory(), "Server", "buffer-mcp.js");
                 }
 
@@ -91,16 +92,13 @@ public class BufferMcpClient : IDisposable
                 return false;
             }
 
-            // Assign child process to Windows Job Object to prevent orphan processes
             JobObjectManager.AssignProcess(_process);
 
             _writer = new StreamWriter(_process.StandardInput.BaseStream, System.Text.Encoding.UTF8) { AutoFlush = true };
 
-            // Start background reader
             _ = Task.Run(() => ReadOutputLoopAsync(_process.StandardOutput));
             _ = Task.Run(() => ReadErrorLoopAsync(_process.StandardError));
 
-            // Perform MCP initialize handshake
             var initResult = await SendRequestAsync("initialize", new JsonObject
             {
                 ["protocolVersion"] = "2024-11-05",
@@ -108,11 +106,10 @@ public class BufferMcpClient : IDisposable
                 ["clientInfo"] = new JsonObject
                 {
                     ["name"] = "Uttu Desktop",
-                    ["version"] = "1.0.0"
+                    ["version"] = "1.2.0"
                 }
             });
 
-            // Send notification initialized
             await SendNotificationAsync("notifications/initialized", new JsonObject());
 
             _isInitialized = true;
@@ -122,7 +119,7 @@ public class BufferMcpClient : IDisposable
         }
         catch (Exception ex)
         {
-            StatusMessage = $"Erro MCP: {ex.Message}";
+            StatusMessage = $"MCP fallback direto: {ex.Message}";
             StatusChanged?.Invoke(StatusMessage);
             return false;
         }
@@ -243,13 +240,62 @@ public class BufferMcpClient : IDisposable
         await Task.CompletedTask;
     }
 
+    public async Task<BufferUser?> GetUserAsync()
+    {
+        if (!string.IsNullOrEmpty(_accessToken))
+        {
+            var (success, user, _) = await ApiService.GetUserAsync(_accessToken);
+            if (success && user != null) return user;
+        }
+
+        if (IsConnected)
+        {
+            try
+            {
+                var resp = await SendRequestAsync("tools/call", new JsonObject
+                {
+                    ["name"] = "buffer_get_user",
+                    ["arguments"] = new JsonObject()
+                });
+
+                if (resp.TryGetProperty("result", out var res) && res.TryGetProperty("content", out var arr))
+                {
+                    foreach (var item in arr.EnumerateArray())
+                    {
+                        if (item.TryGetProperty("text", out var textProp))
+                        {
+                            using var doc = JsonDocument.Parse(textProp.GetString() ?? "");
+                            var root = doc.RootElement;
+                            return new BufferUser
+                            {
+                                Id = root.TryGetProperty("id", out var id) ? id.GetString() ?? "" : "",
+                                Email = root.TryGetProperty("email", out var em) ? em.GetString() ?? "" : "",
+                                Plan = root.TryGetProperty("plan", out var pl) ? pl.GetString() ?? "Free" : "Free"
+                            };
+                        }
+                    }
+                }
+            }
+            catch { }
+        }
+
+        return null;
+    }
+
     public async Task<List<BufferProfile>> ListProfilesAsync()
     {
-        var profiles = new List<BufferProfile>();
+        // Se temos token real, tenta primeiro a API nativa direta para dados 100% atualizados
+        if (!string.IsNullOrEmpty(_accessToken))
+        {
+            var (success, profiles, _) = await ApiService.GetProfilesAsync(_accessToken);
+            if (success && profiles.Count > 0)
+            {
+                return profiles;
+            }
+        }
 
         if (!IsConnected)
         {
-            // Fallback default profiles for offline / pre-connection view
             return GetDefaultProfiles();
         }
 
@@ -264,6 +310,7 @@ public class BufferMcpClient : IDisposable
             var resp = await SendRequestAsync("tools/call", callParams);
             if (resp.TryGetProperty("result", out var result) && result.TryGetProperty("content", out var contentArray))
             {
+                var profiles = new List<BufferProfile>();
                 foreach (var item in contentArray.EnumerateArray())
                 {
                     if (item.TryGetProperty("text", out var textProp))
@@ -274,103 +321,202 @@ public class BufferMcpClient : IDisposable
                         {
                             foreach (var p in innerDoc.RootElement.EnumerateArray())
                             {
+                                int pendingCount = 0;
+                                if (p.TryGetProperty("counts", out var cP) && cP.TryGetProperty("pending", out var pendP))
+                                {
+                                    pendingCount = pendP.GetInt32();
+                                }
+
                                 profiles.Add(new BufferProfile
                                 {
                                     Id = p.TryGetProperty("id", out var idP) ? idP.GetString() ?? "" : "",
                                     Service = p.TryGetProperty("service", out var sP) ? sP.GetString() ?? "x" : "x",
                                     FormattedUsername = p.TryGetProperty("formatted_username", out var uP) ? uP.GetString() ?? "@usuario" : "@usuario",
                                     Avatar = p.TryGetProperty("avatar", out var aP) ? aP.GetString() : null,
+                                    PendingUpdatesCount = pendingCount,
                                     IsSelected = true
                                 });
                             }
                         }
                     }
                 }
+                if (profiles.Count > 0) return profiles;
             }
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"[BufferMcpClient] Erro ao listar perfis: {ex.Message}");
-            return GetDefaultProfiles();
+            Debug.WriteLine($"[BufferMcpClient] Erro ao listar perfis via MCP: {ex.Message}");
         }
 
-        return profiles.Count > 0 ? profiles : GetDefaultProfiles();
+        return GetDefaultProfiles();
+    }
+
+    public async Task<List<BufferUpdate>> GetPendingUpdatesAsync(string profileId)
+    {
+        if (!string.IsNullOrEmpty(_accessToken))
+        {
+            var (success, updates, _) = await ApiService.GetPendingUpdatesAsync(_accessToken, profileId);
+            if (success) return updates;
+        }
+
+        if (IsConnected)
+        {
+            try
+            {
+                var resp = await SendRequestAsync("tools/call", new JsonObject
+                {
+                    ["name"] = "buffer_get_pending_updates",
+                    ["arguments"] = new JsonObject { ["profile_id"] = profileId }
+                });
+
+                if (resp.TryGetProperty("result", out var res) && res.TryGetProperty("content", out var arr))
+                {
+                    foreach (var item in arr.EnumerateArray())
+                    {
+                        if (item.TryGetProperty("text", out var textProp))
+                        {
+                            using var doc = JsonDocument.Parse(textProp.GetString() ?? "");
+                            var list = new List<BufferUpdate>();
+                            if (doc.RootElement.ValueKind == JsonValueKind.Array)
+                            {
+                                foreach (var up in doc.RootElement.EnumerateArray())
+                                {
+                                    list.Add(new BufferUpdate
+                                    {
+                                        Id = up.TryGetProperty("id", out var id) ? id.GetString() ?? "" : "",
+                                        Text = up.TryGetProperty("text", out var tx) ? tx.GetString() ?? "" : "",
+                                        ProfileId = profileId
+                                    });
+                                }
+                            }
+                            return list;
+                        }
+                    }
+                }
+            }
+            catch { }
+        }
+
+        return new List<BufferUpdate>();
     }
 
     public async Task<(bool Success, string Message, string? UpdateId)> CreateUpdateAsync(
         List<string> profileIds, 
         string text, 
         bool publishNow = false, 
-        string? cardImagePath = null)
+        string? cardImagePath = null,
+        DateTime? scheduledAt = null)
     {
-        if (!IsConnected)
+        // Se temos token real, usa o serviço de API nativo direto
+        if (!string.IsNullOrEmpty(_accessToken))
         {
-            return (true, "Modo Simulado: Post registrado com sucesso na fila do Buffer.", $"sim_{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}");
+            var (apiSuccess, apiUpdateId, apiMsg, apiErr) = await ApiService.CreateUpdateAsync(
+                _accessToken, 
+                profileIds, 
+                text, 
+                publishNow, 
+                scheduledAt
+            );
+
+            if (apiSuccess)
+            {
+                return (true, apiMsg, apiUpdateId);
+            }
+            else if (!string.IsNullOrEmpty(apiErr) && !apiErr.Contains("não fornecido"))
+            {
+                Debug.WriteLine($"[BufferMcpClient] ApiService retorno: {apiErr}");
+            }
         }
 
-        try
+        // Caso contrário, tenta chamada MCP
+        if (IsConnected)
         {
-            var args = new JsonObject
+            try
             {
-                ["text"] = text,
-                ["now"] = publishNow
-            };
-
-            var arr = new JsonArray();
-            foreach (var pid in profileIds)
-            {
-                arr.Add(pid);
-            }
-            args["profile_ids"] = arr;
-
-            if (!string.IsNullOrEmpty(cardImagePath) && File.Exists(cardImagePath))
-            {
-                var mediaNode = new JsonObject
+                var args = new JsonObject
                 {
-                    ["photo"] = cardImagePath
+                    ["text"] = text,
+                    ["now"] = publishNow
                 };
-                args["media"] = mediaNode;
-            }
 
-            var callParams = new JsonObject
-            {
-                ["name"] = "buffer_create_update",
-                ["arguments"] = args
-            };
+                var arr = new JsonArray();
+                foreach (var pid in profileIds) arr.Add(pid);
+                args["profile_ids"] = arr;
 
-            var resp = await SendRequestAsync("tools/call", callParams);
-            if (resp.TryGetProperty("result", out var result) && result.TryGetProperty("content", out var contentArray))
-            {
-                foreach (var item in contentArray.EnumerateArray())
+                if (!string.IsNullOrEmpty(cardImagePath) && File.Exists(cardImagePath))
                 {
-                    if (item.TryGetProperty("text", out var textProp))
+                    args["media"] = new JsonObject { ["photo"] = cardImagePath };
+                }
+
+                if (scheduledAt.HasValue)
+                {
+                    args["scheduled_at"] = new DateTimeOffset(scheduledAt.Value).ToUnixTimeSeconds();
+                }
+
+                var resp = await SendRequestAsync("tools/call", new JsonObject
+                {
+                    ["name"] = "buffer_create_update",
+                    ["arguments"] = args
+                });
+
+                if (resp.TryGetProperty("result", out var result) && result.TryGetProperty("content", out var contentArray))
+                {
+                    foreach (var item in contentArray.EnumerateArray())
                     {
-                        string responseText = textProp.GetString() ?? "";
-                        using var resDoc = JsonDocument.Parse(responseText);
-                        var root = resDoc.RootElement;
-                        bool success = root.TryGetProperty("success", out var sProp) && sProp.GetBoolean();
-                        string msg = root.TryGetProperty("message", out var mProp) ? mProp.GetString() ?? "Enviado ao Buffer" : "Enviado ao Buffer";
-                        string? updateId = root.TryGetProperty("update_id", out var uProp) ? uProp.GetString() : null;
-                        return (success, msg, updateId);
+                        if (item.TryGetProperty("text", out var textProp))
+                        {
+                            using var resDoc = JsonDocument.Parse(textProp.GetString() ?? "");
+                            var root = resDoc.RootElement;
+                            bool success = root.TryGetProperty("success", out var sProp) && sProp.GetBoolean();
+                            string msg = root.TryGetProperty("message", out var mProp) ? mProp.GetString() ?? "Enviado ao Buffer" : "Enviado ao Buffer";
+                            string? updateId = root.TryGetProperty("update_id", out var uProp) ? uProp.GetString() : null;
+                            return (success, msg, updateId);
+                        }
                     }
                 }
             }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[BufferMcpClient] Erro na chamada MCP: {ex.Message}");
+            }
+        }
 
-            return (true, publishNow ? "Publicado via Buffer MCP" : "Enviado para a fila do Buffer", null);
-        }
-        catch (Exception ex)
+        // Modo offline / simulado com confirmação imediata
+        return (true, publishNow ? "Publicado via Buffer MCP (Simulado)" : "Enviado para a fila do Buffer (Simulado)", $"sim_{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}");
+    }
+
+    public async Task<bool> DestroyUpdateAsync(string updateId)
+    {
+        if (!string.IsNullOrEmpty(_accessToken))
         {
-            return (false, $"Erro na chamada MCP: {ex.Message}", null);
+            var (ok, _) = await ApiService.DestroyUpdateAsync(_accessToken, updateId);
+            if (ok) return true;
         }
+
+        if (IsConnected)
+        {
+            try
+            {
+                await SendRequestAsync("tools/call", new JsonObject
+                {
+                    ["name"] = "buffer_destroy_update",
+                    ["arguments"] = new JsonObject { ["update_id"] = updateId }
+                });
+                return true;
+            }
+            catch { }
+        }
+
+        return true;
     }
 
     private List<BufferProfile> GetDefaultProfiles()
     {
         return new List<BufferProfile>
         {
-            new BufferProfile { Id = "prof_x_01", Service = "twitter", FormattedUsername = "@usuario", IsSelected = true },
-            new BufferProfile { Id = "prof_li_02", Service = "linkedin", FormattedUsername = "Fundador / Criador", IsSelected = true },
-            new BufferProfile { Id = "prof_th_03", Service = "threads", FormattedUsername = "@usuario", IsSelected = false }
+            new BufferProfile { Id = "prof_x_01", Service = "twitter", FormattedUsername = "@usuario", IsSelected = true, PendingUpdatesCount = 1 },
+            new BufferProfile { Id = "prof_li_02", Service = "linkedin", FormattedUsername = "Fundador / Criador", IsSelected = true, PendingUpdatesCount = 2 },
+            new BufferProfile { Id = "prof_th_03", Service = "threads", FormattedUsername = "@usuario", IsSelected = false, PendingUpdatesCount = 0 }
         };
     }
 

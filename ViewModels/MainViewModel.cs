@@ -30,10 +30,13 @@ public class MainViewModel : INotifyPropertyChanged
     public ObservableCollection<MemoryItem> Memories { get; } = new();
     public ObservableCollection<MemoryItem> FilteredMemories { get; } = new();
     public ObservableCollection<BufferProfile> BufferProfiles { get; } = new();
+    public ObservableCollection<BufferUpdate> PendingBufferUpdates { get; } = new();
 
     // State
     private VoiceProfile _voiceProfile = new();
     private AppSettings _settings = new();
+    private BufferUser? _currentBufferUser;
+    private string _bufferUserDisplay = "Token não verificado";
     private int _selectedTabIndex = 0;
     private string _selectedCategory = "Todas";
     private string _newMemoryText = string.Empty;
@@ -53,6 +56,18 @@ public class MainViewModel : INotifyPropertyChanged
     public Action? RequestShowWindow { get; set; }
 
     #region Properties
+
+    public BufferUser? CurrentBufferUser
+    {
+        get => _currentBufferUser;
+        set => SetField(ref _currentBufferUser, value);
+    }
+
+    public string BufferUserDisplay
+    {
+        get => _bufferUserDisplay;
+        set => SetField(ref _bufferUserDisplay, value);
+    }
 
     public VoiceProfile VoiceProfile
     {
@@ -172,6 +187,7 @@ public class MainViewModel : INotifyPropertyChanged
 
     public int DraftsCount => Drafts.Count;
     public int ActiveMemoriesCount => Memories.Count(m => m.IsActive);
+    public int PendingQueueCount => PendingBufferUpdates.Count;
 
     #endregion
 
@@ -190,6 +206,9 @@ public class MainViewModel : INotifyPropertyChanged
     public ICommand SaveVoiceCommand { get; }
     public ICommand SaveSettingsCommand { get; }
     public ICommand ReconnectMcpCommand { get; }
+    public ICommand TestBufferTokenCommand { get; }
+    public ICommand RefreshBufferQueueCommand { get; }
+    public ICommand DestroyBufferUpdateCommand { get; }
     public ICommand OpenCacheFolderCommand { get; }
     public ICommand DismissBannerCommand { get; }
     public ICommand ShowWindowCommand { get; }
@@ -222,6 +241,9 @@ public class MainViewModel : INotifyPropertyChanged
         SaveVoiceCommand = new RelayCommand(async _ => await SaveVoiceAsync());
         SaveSettingsCommand = new RelayCommand(async _ => await SaveSettingsAsync());
         ReconnectMcpCommand = new RelayCommand(async _ => await InitializeMcpAsync());
+        TestBufferTokenCommand = new RelayCommand(async _ => await TestBufferTokenAsync());
+        RefreshBufferQueueCommand = new RelayCommand(async _ => await RefreshBufferQueueAsync());
+        DestroyBufferUpdateCommand = new RelayCommand(async u => await DestroyBufferUpdateAsync(u as BufferUpdate));
         OpenCacheFolderCommand = new RelayCommand(_ => OpenCacheFolder());
         DismissBannerCommand = new RelayCommand(_ => InfoBannerMessage = string.Empty);
         ShowWindowCommand = new RelayCommand(_ => RequestShowWindow?.Invoke());
@@ -306,15 +328,20 @@ public class MainViewModel : INotifyPropertyChanged
             ApplyMemoryFilter();
             OnPropertyChanged(nameof(ActiveMemoriesCount));
 
-            // Start MCP
+            // Start MCP & Buffer API
             await InitializeMcpAsync();
+
+            // Auto-check Buffer User if token exists
+            if (!string.IsNullOrEmpty(BufferTokenInput))
+            {
+                _ = TestBufferTokenAsync(silent: true);
+            }
 
             // Start Scheduler
             _scheduler.Start(Settings);
             NextRunText = _scheduler.NextRunFormatted;
             UpdateRamMetric();
 
-            // Set initial card preview if available
             if (Drafts.Count > 0)
             {
                 CardPreviewPath = Drafts.First().CardImagePath;
@@ -340,6 +367,122 @@ public class MainViewModel : INotifyPropertyChanged
         }
 
         UpdateChannelDisplay();
+        await RefreshBufferQueueAsync();
+    }
+
+    public async Task TestBufferTokenAsync(bool silent = false)
+    {
+        if (string.IsNullOrWhiteSpace(BufferTokenInput))
+        {
+            BufferUserDisplay = "Nenhum token fornecido";
+            if (!silent) InfoBannerMessage = "Por favor, informe seu Buffer Access Token.";
+            return;
+        }
+
+        if (!silent)
+        {
+            IsLoading = true;
+            InfoBannerMessage = "Conectando à API do Buffer (api.bufferapp.com)...";
+        }
+
+        try
+        {
+            var (userSuccess, user, userErr) = await _mcp.ApiService.GetUserAsync(BufferTokenInput);
+            if (userSuccess && user != null)
+            {
+                CurrentBufferUser = user;
+                BufferUserDisplay = $"✓ Conectado: {user.Email} (Plano: {user.Plan})";
+
+                var (profSuccess, profiles, profErr) = await _mcp.ApiService.GetProfilesAsync(BufferTokenInput);
+                if (profSuccess && profiles.Count > 0)
+                {
+                    BufferProfiles.Clear();
+                    foreach (var p in profiles)
+                    {
+                        BufferProfiles.Add(p);
+                    }
+                    UpdateChannelDisplay();
+                    await RefreshBufferQueueAsync();
+
+                    if (!silent)
+                    {
+                        InfoBannerMessage = $"✓ Sucesso! Conectado à conta Buffer de {user.Email} com {profiles.Count} canal(is) mapeados.";
+                    }
+                }
+                else if (!silent)
+                {
+                    InfoBannerMessage = $"✓ Token válido para {user.Email}, mas nenhum canal conectado no Buffer.";
+                }
+            }
+            else
+            {
+                BufferUserDisplay = "Token inválido ou desconectado";
+                if (!silent)
+                {
+                    InfoBannerMessage = $"Falha ao autenticar na API do Buffer: {userErr}";
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            BufferUserDisplay = "Erro de conexão com Buffer";
+            if (!silent)
+            {
+                InfoBannerMessage = $"Erro ao contatar API do Buffer: {ex.Message}";
+            }
+        }
+        finally
+        {
+            if (!silent) IsLoading = false;
+        }
+    }
+
+    public async Task RefreshBufferQueueAsync()
+    {
+        PendingBufferUpdates.Clear();
+        var selected = BufferProfiles.Where(p => p.IsSelected).ToList();
+        if (selected.Count == 0 && BufferProfiles.Count > 0)
+        {
+            selected.Add(BufferProfiles.First());
+        }
+
+        foreach (var prof in selected)
+        {
+            var updates = await _mcp.GetPendingUpdatesAsync(prof.Id);
+            foreach (var up in updates)
+            {
+                up.ServiceName = prof.FormattedService;
+                up.ProfileName = prof.FormattedUsername;
+                PendingBufferUpdates.Add(up);
+            }
+        }
+
+        OnPropertyChanged(nameof(PendingQueueCount));
+    }
+
+    public async Task DestroyBufferUpdateAsync(BufferUpdate? update)
+    {
+        if (update == null) return;
+
+        IsLoading = true;
+        try
+        {
+            bool ok = await _mcp.DestroyUpdateAsync(update.Id);
+            if (ok)
+            {
+                PendingBufferUpdates.Remove(update);
+                OnPropertyChanged(nameof(PendingQueueCount));
+                InfoBannerMessage = "✓ Post cancelado e removido da fila do Buffer.";
+            }
+        }
+        catch (Exception ex)
+        {
+            InfoBannerMessage = $"Erro ao remover do Buffer: {ex.Message}";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
     }
 
     private void UpdateChannelDisplay()
@@ -422,6 +565,9 @@ public class MainViewModel : INotifyPropertyChanged
 
             Drafts.Remove(draft);
             OnPropertyChanged(nameof(DraftsCount));
+
+            // Refresh queue to show the newly added post
+            await RefreshBufferQueueAsync();
 
             InfoBannerMessage = $"✓ Post aprovado e enviado para a fila do Buffer! ({result.Message})";
             _toastService.ShowSuccessToast("Uttu · Post Aprovado", $"Enviado com sucesso à fila do Buffer ({draft.Platform})");
@@ -524,7 +670,7 @@ public class MainViewModel : INotifyPropertyChanged
             await _db.SavePostAsync(draft);
 
             CardPreviewPath = cardPath;
-            SelectedTabIndex = 3; // Navigate to Card Generator tab
+            SelectedTabIndex = 3;
             InfoBannerMessage = "✓ Cartão 1600x900 gerado com sucesso via SkiaSharp!";
         }
         catch (Exception ex)
@@ -608,7 +754,6 @@ public class MainViewModel : INotifyPropertyChanged
 
     public async Task SaveSettingsAsync()
     {
-        // Encrypt tokens using DPAPI
         Settings.BufferAccessTokenEncrypted = SecurityService.Protect(BufferTokenInput);
         Settings.AiApiKeyEncrypted = SecurityService.Protect(AiApiKeyInput);
 
@@ -619,6 +764,7 @@ public class MainViewModel : INotifyPropertyChanged
         InfoBannerMessage = "✓ Configurações e tokens gravados com segurança (DPAPI).";
 
         await InitializeMcpAsync();
+        await TestBufferTokenAsync(silent: false);
     }
 
     public void OpenCacheFolder()

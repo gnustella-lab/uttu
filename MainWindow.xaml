@@ -479,6 +479,22 @@
                                             Command="{Binding ReconnectMcpCommand}"/>
                                 </Grid>
 
+                                <!-- Buffer API Status Card -->
+                                <Border Background="#1C2833" BorderBrush="#0078D7" BorderThickness="1" Padding="12,10" Margin="0,0,0,14">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                            <TextBlock Text="API Buffer (api.bufferapp.com):" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}"/>
+                                            <TextBlock Text="{Binding BufferUserDisplay}" Foreground="#FFFFFF" FontWeight="Bold" FontSize="13" Margin="0,2,0,0"/>
+                                        </StackPanel>
+                                        <Button Grid.Column="1" Style="{StaticResource FlatPrimaryButton}" Content="⚡ Testar Conexão API"
+                                                Command="{Binding TestBufferTokenCommand}" Padding="12,6" FontSize="12"/>
+                                    </Grid>
+                                </Border>
+
                                 <TextBlock Text="Buffer Access Token (Cifrado com Windows DPAPI):" FontWeight="SemiBold" Margin="0,0,0,4"/>
                                 <TextBox Style="{StaticResource FlatTextBox}" Text="{Binding BufferTokenInput, UpdateSourceTrigger=PropertyChanged}"
                                          Tag="Cole seu Buffer Access Token aqui..." Margin="0,0,0,12"/>
@@ -487,10 +503,10 @@
                                 <TextBox Style="{StaticResource FlatTextBox}" Text="{Binding Settings.BufferMcpCommand, UpdateSourceTrigger=PropertyChanged}"
                                          Tag="'internal' para o servidor Node embutido, ou caminho de executável..." Margin="0,0,0,6"/>
                                 <TextBlock Text="Padrão: 'internal' (executa Server/buffer-mcp.js com isolamento Job Object e sem portas de rede abertas)."
-                                           Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" Margin="0,0,0,12"/>
+                                           Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" Margin="0,0,0,14"/>
 
                                 <TextBlock Text="Canais Detectados no Buffer:" FontWeight="SemiBold" Margin="0,0,0,6"/>
-                                <ItemsControl ItemsSource="{Binding BufferProfiles}">
+                                <ItemsControl ItemsSource="{Binding BufferProfiles}" Margin="0,0,0,14">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
                                             <Border Background="#252525" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Padding="10,6" Margin="0,0,0,4">
@@ -498,17 +514,71 @@
                                                     <Grid.ColumnDefinitions>
                                                         <ColumnDefinition Width="Auto"/>
                                                         <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
                                                     </Grid.ColumnDefinitions>
                                                     <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" Style="{StaticResource FlatCheckBox}" Margin="0,0,10,0"/>
                                                     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                                                         <TextBlock Text="{Binding FormattedService}" FontWeight="Bold" Foreground="{StaticResource AccentBrush}" Margin="0,0,8,0"/>
                                                         <TextBlock Text="{Binding FormattedUsername}" Foreground="#FFFFFF"/>
                                                     </StackPanel>
+                                                    <Border Grid.Column="2" Background="#181818" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Padding="6,2">
+                                                        <TextBlock Text="{Binding QueueStatusText}" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" FontFamily="Consolas"/>
+                                                    </Border>
                                                 </Grid>
                                             </Border>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
+
+                                <!-- Fila do Buffer em Tempo Real -->
+                                <Grid Margin="0,6,0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="Fila de Postagens Pendentes no Buffer:" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                    <Button Grid.Column="1" Style="{StaticResource FlatSecondaryButton}" Content="↻ Atualizar Fila"
+                                            Command="{Binding RefreshBufferQueueCommand}" Padding="8,4" FontSize="11"/>
+                                </Grid>
+
+                                <Border Background="#161616" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Padding="10" MinHeight="60">
+                                    <StackPanel>
+                                        <TextBlock Text="Nenhum post pendente na fila do Buffer para os canais selecionados."
+                                                   Foreground="{StaticResource TextSecondaryBrush}" FontSize="12"
+                                                   Visibility="{Binding PendingQueueCount, Converter={StaticResource InverseBoolToVisibility}}"/>
+                                        
+                                        <ItemsControl ItemsSource="{Binding PendingBufferUpdates}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border Background="#202020" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Padding="10" Margin="0,0,0,6">
+                                                        <Grid>
+                                                            <Grid.RowDefinitions>
+                                                                <RowDefinition Height="Auto"/>
+                                                                <RowDefinition Height="Auto"/>
+                                                            </Grid.RowDefinitions>
+                                                            <Grid Grid.Row="0" Margin="0,0,0,4">
+                                                                <Grid.ColumnDefinitions>
+                                                                    <ColumnDefinition Width="*"/>
+                                                                    <ColumnDefinition Width="Auto"/>
+                                                                </Grid.ColumnDefinitions>
+                                                                <StackPanel Orientation="Horizontal">
+                                                                    <TextBlock Text="{Binding ServiceName}" FontWeight="Bold" Foreground="{StaticResource AccentBrush}" Margin="0,0,6,0"/>
+                                                                    <TextBlock Text="{Binding ProfileName}" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,8,0"/>
+                                                                    <TextBlock Text="{Binding DueAtFormatted}" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="Consolas" FontSize="11"/>
+                                                                </StackPanel>
+                                                                <Button Grid.Column="1" Style="{StaticResource FlatDangerButton}" Content="Cancelar Post"
+                                                                        Padding="6,2" FontSize="10"
+                                                                        Command="{Binding DataContext.DestroyBufferUpdateCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                        CommandParameter="{Binding}"/>
+                                                            </Grid>
+                                                            <TextBlock Grid.Row="1" Text="{Binding Text}" Foreground="#FFFFFF" TextWrapping="Wrap" FontSize="12"/>
+                                                        </Grid>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </Border>
                             </StackPanel>
                         </Border>
 
