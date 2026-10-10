@@ -1,0 +1,591 @@
+<Window x:Class="Uttu.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:tb="clr-namespace:H.NotifyIcon;assembly=H.NotifyIcon.Wpf"
+        xmlns:vm="clr-namespace:Uttu.ViewModels"
+        mc:Ignorable="d"
+        Title="Uttu Desktop · Copiloto de Conteúdo Social"
+        Height="760" Width="1100"
+        MinHeight="600" MinWidth="900"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource WindowBgBrush}"
+        Foreground="{StaticResource TextPrimaryBrush}"
+        Icon="/Resources/app.ico">
+
+    <Window.DataContext>
+        <vm:MainViewModel/>
+    </Window.DataContext>
+
+    <Window.InputBindings>
+        <KeyBinding Modifiers="Ctrl" Key="N" Command="{Binding AddMemoryCommand}"/>
+    </Window.InputBindings>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <!-- 0: Header Bar -->
+            <RowDefinition Height="Auto"/>
+            <!-- 1: Notification / Info Banner -->
+            <RowDefinition Height="Auto"/>
+            <!-- 2: Tabs Navigation & Content -->
+            <RowDefinition Height="*"/>
+            <!-- 3: Status Bar -->
+            <RowDefinition Height="32"/>
+        </Grid.RowDefinitions>
+
+        <!-- System Tray Icon -->
+        <tb:TaskbarIcon x:Name="MyTaskbarIcon"
+                        ToolTipText="Uttu Desktop - Copiloto Social"
+                        IconSource="/Resources/app.ico"
+                        DoubleClickCommand="{Binding ShowWindowCommand}">
+            <tb:TaskbarIcon.ContextMenu>
+                <ContextMenu Background="#1E1E1E" Foreground="#FFFFFF" BorderBrush="#2B2B2B" BorderThickness="1">
+                    <MenuItem Header="Abrir Uttu" Command="{Binding ShowWindowCommand}"/>
+                    <MenuItem Header="Gerar Novos Rascunhos" Command="{Binding GenerateDraftsCommand}"/>
+                    <Separator Background="#2B2B2B"/>
+                    <MenuItem Header="Sair" Command="{Binding ExitAppCommand}"/>
+                </ContextMenu>
+            </tb:TaskbarIcon.ContextMenu>
+        </tb:TaskbarIcon>
+
+        <!-- 0: HEADER BAR FLAT -->
+        <Border Grid.Row="0" Background="#181818" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1" Padding="18,12">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Brand / Logo Flat -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border Width="28" Height="28" Background="{StaticResource AccentBrush}" Margin="0,0,10,0">
+                        <TextBlock Text="U" Foreground="#FFFFFF" FontWeight="Bold" FontSize="16" FontFamily="Segoe UI"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <TextBlock Text="Uttu Desktop" FontWeight="Bold" FontSize="16" VerticalAlignment="Center" Foreground="#FFFFFF"/>
+                    <TextBlock Text=" · Copiloto de Conteúdo Social" FontSize="14" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- Center/Right Channels & Quick Action -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <!-- Canalis cadastrados badge -->
+                    <Border Background="#222222" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Padding="10,5" Margin="0,0,12,0">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Canal Ativo: " Foreground="{StaticResource TextSecondaryBrush}" FontSize="12"/>
+                            <TextBlock Text="{Binding SelectedChannelDisplay}" Foreground="#FFFFFF" FontWeight="SemiBold" FontSize="12"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Botão Gerar Rascunhos Agora -->
+                    <Button Style="{StaticResource FlatPrimaryButton}" Command="{Binding GenerateDraftsCommand}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="⚡ " FontSize="12"/>
+                            <TextBlock Text="Gerar Rascunhos Agora" FontSize="12"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- 1: NOTIFICATION BANNER -->
+        <Border Grid.Row="1" Background="#0C3B61" BorderBrush="#0078D7" BorderThickness="0,0,0,1" Padding="16,8"
+                Visibility="{Binding HasInfoBanner, Converter={StaticResource BoolToVisibility}}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="{Binding InfoBannerMessage}" Foreground="#FFFFFF" FontSize="13" VerticalAlignment="Center"/>
+                <Button Grid.Column="1" Content="✕" Background="Transparent" Foreground="#A0A0A0" BorderThickness="0"
+                        Cursor="Hand" FontSize="12" Margin="10,0,0,0" Command="{Binding DismissBannerCommand}"/>
+            </Grid>
+        </Border>
+
+        <!-- 2: TABS NAVIGATION & CONTENT -->
+        <TabControl Grid.Row="2" Background="Transparent" BorderThickness="0" SelectedIndex="{Binding SelectedTabIndex}">
+            
+            <!-- ABA 1: RASCUNHOS -->
+            <TabItem Style="{StaticResource FlatTabItem}">
+                <TabItem.Header>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Rascunhos ("/>
+                        <TextBlock Text="{Binding DraftsCount}"/>
+                        <TextBlock Text=")"/>
+                    </StackPanel>
+                </TabItem.Header>
+
+                <Grid Margin="18">
+                    <!-- Empty State -->
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
+                                Visibility="{Binding DraftsCount, Converter={StaticResource InverseBoolToVisibility}}">
+                        <TextBlock Text="Nenhum rascunho pendente no momento." FontSize="16" FontWeight="SemiBold"
+                                   Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                        <TextBlock Text="Clique em 'Gerar Rascunhos Agora' ou aguarde a notificação proativa agendada."
+                                   FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,16"/>
+                        <Button Style="{StaticResource FlatPrimaryButton}" Content="⚡ Gerar Novos Rascunhos"
+                                Command="{Binding GenerateDraftsCommand}" HorizontalAlignment="Center"/>
+                    </StackPanel>
+
+                    <!-- Drafts List (VirtualizingStackPanel) -->
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <ItemsControl ItemsSource="{Binding Drafts}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="{StaticResource CardBgBrush}" BorderBrush="{StaticResource BorderBrush}"
+                                            BorderThickness="1" Margin="0,0,0,16" Padding="18">
+                                        <Grid>
+                                            <Grid.RowDefinitions>
+                                                <!-- Header do cartão -->
+                                                <RowDefinition Height="Auto"/>
+                                                <!-- Conteúdo do post -->
+                                                <RowDefinition Height="Auto"/>
+                                                <!-- Refinamento inline -->
+                                                <RowDefinition Height="Auto"/>
+                                                <!-- Ações -->
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
+
+                                            <!-- Header do Cartão -->
+                                            <Grid Grid.Row="0" Margin="0,0,0,12">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <!-- Plataforma Badge -->
+                                                <Border Grid.Column="0" Background="#262626" BorderBrush="{Binding Platform, Converter={StaticResource PlatformToBrush}}"
+                                                        BorderThickness="1" Padding="8,3" Margin="0,0,12,0">
+                                                    <TextBlock Text="{Binding PlatformBadge}" Foreground="{Binding Platform, Converter={StaticResource PlatformToBrush}}"
+                                                               FontWeight="SemiBold" FontSize="11" FontFamily="Consolas"/>
+                                                </Border>
+
+                                                <!-- Tema -->
+                                                <TextBlock Grid.Column="1" Text="{Binding Theme}" FontWeight="SemiBold" FontSize="14"
+                                                           Foreground="#FFFFFF" VerticalAlignment="Center"/>
+
+                                                <!-- Contador de Caracteres -->
+                                                <Border Grid.Column="2" Background="#181818" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Padding="8,3">
+                                                    <TextBlock Text="{Binding CharCountDisplay}"
+                                                               Foreground="{Binding IsOverLimit, Converter={StaticResource OverLimitToBrush}}"
+                                                               FontFamily="Consolas" FontSize="12"/>
+                                                </Border>
+                                            </Grid>
+
+                                            <!-- Conteúdo do Post (TextBox Flat Editável) -->
+                                            <TextBox Grid.Row="1" Style="{StaticResource FlatTextBox}"
+                                                     Text="{Binding Content, UpdateSourceTrigger=PropertyChanged}"
+                                                     AcceptsReturn="True" TextWrapping="Wrap" MinHeight="100" MaxHeight="240"
+                                                     VerticalScrollBarVisibility="Auto" Margin="0,0,0,12" FontSize="14"/>
+
+                                            <!-- Refinamento Inline -->
+                                            <Grid Grid.Row="2" Margin="0,0,0,14">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Grid.Column="0" Text="Refinar: " Foreground="{StaticResource TextSecondaryBrush}"
+                                                           VerticalAlignment="Center" Margin="0,0,8,0" FontSize="12"/>
+                                                <TextBox Grid.Column="1" Style="{StaticResource FlatTextBox}"
+                                                         Text="{Binding RefinePrompt, UpdateSourceTrigger=PropertyChanged}"
+                                                         Tag="Ex: deixe mais conciso, mude o gancho..." Margin="0,0,8,0"/>
+                                                <Button Grid.Column="2" Style="{StaticResource FlatSecondaryButton}" Content="Refinar"
+                                                        Command="{Binding DataContext.RefineDraftCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                        CommandParameter="{Binding}"/>
+                                            </Grid>
+
+                                            <!-- Ações (Descartar, Gerar Cartão, Aprovar, Publicar) -->
+                                            <Grid Grid.Row="3">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <!-- Descartar -->
+                                                <Button Grid.Column="0" Style="{StaticResource FlatDangerButton}" Content="Descartar (Del)"
+                                                        Command="{Binding DataContext.DiscardDraftCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                        CommandParameter="{Binding}"/>
+
+                                                <!-- Gerar Cartão 1600x900 -->
+                                                <StackPanel Grid.Column="2" Orientation="Horizontal">
+                                                    <Button Style="{StaticResource FlatSecondaryButton}" Content="Gerar Cartão 1600×900"
+                                                            Margin="0,0,8,0"
+                                                            Command="{Binding DataContext.GenerateCardCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                            CommandParameter="{Binding}"/>
+                                                    
+                                                    <Button Style="{StaticResource FlatSecondaryButton}" Content="Publicar Imediatamente"
+                                                            Margin="0,0,8,0"
+                                                            Command="{Binding DataContext.PublishNowCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                            CommandParameter="{Binding}"/>
+
+                                                    <Button Style="{StaticResource FlatPrimaryButton}" Content="✓ APROVAR (Ctrl+Enter)"
+                                                            Command="{Binding DataContext.ApproveDraftCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                            CommandParameter="{Binding}"/>
+                                                </StackPanel>
+                                            </Grid>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Grid>
+            </TabItem>
+
+            <!-- ABA 2: MEMÓRIAS E REGRAS -->
+            <TabItem Style="{StaticResource FlatTabItem}">
+                <TabItem.Header>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Memórias e Regras ("/>
+                        <TextBlock Text="{Binding ActiveMemoriesCount}"/>
+                        <TextBlock Text=")"/>
+                    </StackPanel>
+                </TabItem.Header>
+
+                <Grid Margin="18">
+                    <Grid.RowDefinitions>
+                        <!-- Adicionar Nova Memória -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- Filtros por categoria -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- Grade de Memórias -->
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Adicionar Nova Memória Inline -->
+                    <Border Grid.Row="0" Background="{StaticResource CardBgBrush}" BorderBrush="{StaticResource BorderBrush}"
+                            BorderThickness="1" Padding="14" Margin="0,0,0,16">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="160"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBox Grid.Column="0" Style="{StaticResource FlatTextBox}"
+                                     Text="{Binding NewMemoryText, UpdateSourceTrigger=PropertyChanged}"
+                                     Tag="Digite uma nova regra, lição de engenharia ou diretriz de tom..." Margin="0,0,10,0"/>
+
+                            <ComboBox Grid.Column="1" SelectedValue="{Binding NewMemoryCategory}" SelectedValuePath="Content"
+                                      Background="{StaticResource SurfaceBgBrush}" Foreground="#FFFFFF" BorderBrush="{StaticResource BorderBrush}"
+                                      Margin="0,0,10,0" VerticalContentAlignment="Center">
+                                <ComboBoxItem Content="Ganchos" IsSelected="True"/>
+                                <ComboBoxItem Content="Tom"/>
+                                <ComboBoxItem Content="Regras"/>
+                                <ComboBoxItem Content="Formatação"/>
+                            </ComboBox>
+
+                            <Button Grid.Column="2" Style="{StaticResource FlatPrimaryButton}" Content="+ Adicionar Memória (Ctrl+N)"
+                                    Command="{Binding AddMemoryCommand}"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- Filtros por Categoria -->
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,12">
+                        <TextBlock Text="Filtrar:" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <RadioButton Content="Todas" GroupName="CatFilter" IsChecked="True" Foreground="#FFFFFF" Margin="0,0,12,0"
+                                     Command="{Binding DataContext.ApplyMemoryFilter, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                    </StackPanel>
+
+                    <!-- Grade de Memórias -->
+                    <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding FilteredMemories}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="{StaticResource CardBgBrush}" BorderBrush="{StaticResource BorderBrush}"
+                                            BorderThickness="1" Padding="12,10" Margin="0,0,0,8">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="80"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <!-- Toggle Ativo/Inativo -->
+                                            <CheckBox Grid.Column="0" Style="{StaticResource FlatCheckBox}"
+                                                      IsChecked="{Binding IsActive}" Margin="0,0,12,0"
+                                                      Command="{Binding DataContext.ToggleMemoryCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                      CommandParameter="{Binding}"/>
+
+                                            <!-- Categoria Badge -->
+                                            <Border Grid.Column="1" Background="#282828" BorderBrush="{StaticResource BorderBrush}"
+                                                    BorderThickness="1" Padding="4,2" Margin="0,0,12,0" HorizontalAlignment="Left">
+                                                <TextBlock Text="{Binding Category}" Foreground="{StaticResource TextSecondaryBrush}"
+                                                           FontSize="11" FontFamily="Consolas"/>
+                                            </Border>
+
+                                            <!-- Texto da Memória -->
+                                            <TextBlock Grid.Column="2" Text="{Binding Text}" Foreground="#FFFFFF" FontSize="13"
+                                                       VerticalAlignment="Center" TextWrapping="Wrap"/>
+
+                                            <!-- Excluir -->
+                                            <Button Grid.Column="3" Style="{StaticResource FlatDangerButton}" Content="Excluir"
+                                                    Padding="8,4" FontSize="11"
+                                                    Command="{Binding DataContext.DeleteMemoryCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                    CommandParameter="{Binding}"/>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Grid>
+            </TabItem>
+
+            <!-- ABA 3: PERFIL DE VOZ -->
+            <TabItem Style="{StaticResource FlatTabItem}" Header="Perfil de Voz">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="18">
+                    <StackPanel>
+                        <!-- Introdução -->
+                        <TextBlock Text="Calibração Local de Tom e Estilo" FontSize="16" FontWeight="Bold" Margin="0,0,0,6"/>
+                        <TextBlock Text="Cole de 3 a 10 postagens autorais anteriores para que o Uttu extraia suas métricas linguísticas, estilo de gancho e vocabulário."
+                                   Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" Margin="0,0,0,14"/>
+
+                        <!-- Editor de Exemplos -->
+                        <Border Background="{StaticResource CardBgBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Padding="14" Margin="0,0,0,16">
+                            <StackPanel>
+                                <TextBlock Text="Exemplos Anteriores (separe por '---'):" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                <TextBox Style="{StaticResource FlatTextBox}" Text="{Binding SamplePostsText, UpdateSourceTrigger=PropertyChanged}"
+                                         AcceptsReturn="True" TextWrapping="Wrap" MinHeight="140" MaxHeight="220" Margin="0,0,0,12"/>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                    <Button Style="{StaticResource FlatSecondaryButton}" Content="Salvar Calibração" Margin="0,0,10,0"
+                                            Command="{Binding SaveVoiceCommand}"/>
+                                    <Button Style="{StaticResource FlatPrimaryButton}" Content="⚡ Analisar e Calibrar Tom"
+                                            Command="{Binding CalibrateVoiceCommand}"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Métricas Linguísticas Extraídas -->
+                        <TextBlock Text="Métricas Linguísticas Extraídas" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                        <UniformGrid Columns="3" Margin="0,0,0,14">
+                            <!-- Card 1: Sentença -->
+                            <Border Background="{StaticResource CardBgBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Padding="14" Margin="0,0,10,0">
+                                <StackPanel>
+                                    <TextBlock Text="Média de Palavras / Sentença" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12"/>
+                                    <TextBlock Text="{Binding VoiceProfile.AvgSentenceLength, StringFormat='{}{0} palavras'}"
+                                               FontSize="22" FontWeight="Bold" Foreground="{StaticResource AccentBrush}" Margin="0,6,0,0"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Card 2: Pontuação -->
+                            <Border Background="{StaticResource CardBgBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Padding="14" Margin="0,0,10,0">
+                                <StackPanel>
+                                    <TextBlock Text="Densidade de Pontuação" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12"/>
+                                    <TextBlock Text="{Binding VoiceProfile.PunctuationDensity, StringFormat='{}{0} marcas/100 pal.'}"
+                                               FontSize="22" FontWeight="Bold" Foreground="#00CC6A" Margin="0,6,0,0"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Card 3: Estilo de Gancho -->
+                            <Border Background="{StaticResource CardBgBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Padding="14">
+                                <StackPanel>
+                                    <TextBlock Text="Estilo de Gancho Dominante" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12"/>
+                                    <TextBlock Text="{Binding VoiceProfile.HookStyle}" FontSize="13" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,6,0,0"/>
+                                </StackPanel>
+                            </Border>
+                        </UniformGrid>
+
+                        <Border Background="{StaticResource CardBgBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Padding="14" Margin="0,0,0,12">
+                            <StackPanel>
+                                <TextBlock Text="Palavras e Clichês Proibidos nos Rascunhos:" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,4"/>
+                                <TextBox Style="{StaticResource FlatTextBox}" Text="{Binding VoiceProfile.ProhibitedWords, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Background="{StaticResource CardBgBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Padding="14">
+                            <StackPanel>
+                                <TextBlock Text="Palavras-chave de Tom:" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,4"/>
+                                <TextBox Style="{StaticResource FlatTextBox}" Text="{Binding VoiceProfile.ToneKeywords, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ABA 4: GERADOR DE CARTÕES (1600x900) -->
+            <TabItem Style="{StaticResource FlatTabItem}" Header="Gerador de Cartões (1600×900)">
+                <Grid Margin="18">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Barra de Ferramentas do Cartão -->
+                    <Border Grid.Row="0" Background="{StaticResource CardBgBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Padding="14" Margin="0,0,0,16">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <CheckBox Grid.Column="0" Content="Fundo Escuro (#0C0D0E)" Style="{StaticResource FlatCheckBox}"
+                                      IsChecked="{Binding CardPreviewDarkMode}" Margin="0,0,20,0"/>
+
+                            <Button Grid.Column="1" Style="{StaticResource FlatSecondaryButton}" Content="Abrir Pasta de Imagens (%LocalAppData%\Uttu\cache)"
+                                    Command="{Binding OpenCacheFolderCommand}"/>
+
+                            <TextBlock Grid.Column="2" Text="Renderizado nativamente com SkiaSharp em 1600×900 sem gastar RAM com Chromium"
+                                       Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="16,0,0,0" FontSize="12"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- Preview da Imagem -->
+                    <Border Grid.Row="1" Background="#0A0A0A" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                        <Grid>
+                            <Image Source="{Binding CardPreviewPath}" Stretch="Uniform" Margin="20"/>
+                            
+                            <!-- Placeholder se nenhuma imagem gerada ainda -->
+                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
+                                        Visibility="{Binding CardPreviewPath, Converter={StaticResource InverseBoolToVisibility}}">
+                                <TextBlock Text="Nenhum cartão 1600×900 gerado ainda." FontSize="15" FontWeight="SemiBold"
+                                           Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                <TextBlock Text="Na aba 'Rascunhos', clique no botão 'Gerar Cartão 1600×900' para renderizar instantaneamente."
+                                           Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </TabItem>
+
+            <!-- ABA 5: CONFIGURAÇÕES & BUFFER MCP -->
+            <TabItem Style="{StaticResource FlatTabItem}" Header="Buffer MCP &amp; Configurações">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="18">
+                    <StackPanel>
+                        <!-- Seção 1: Buffer MCP Integration -->
+                        <TextBlock Text="Integração Buffer Model Context Protocol (MCP)" FontSize="16" FontWeight="Bold" Margin="0,0,0,6"/>
+                        <TextBlock Text="O Uttu executa o servidor Buffer MCP em background através de processo filho gerenciado via Stdio (JSON-RPC 2.0)."
+                                   Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" Margin="0,0,0,14"/>
+
+                        <Border Background="{StaticResource CardBgBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Padding="14" Margin="0,0,0,16">
+                            <StackPanel>
+                                <Grid Margin="0,0,0,12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="Status MCP: " FontWeight="SemiBold"/>
+                                        <TextBlock Text="{Binding McpStatusText}" Foreground="{StaticResource AccentBrush}" FontWeight="SemiBold"/>
+                                    </StackPanel>
+                                    <Button Grid.Column="1" Style="{StaticResource FlatSecondaryButton}" Content="Reconectar Processo MCP"
+                                            Command="{Binding ReconnectMcpCommand}"/>
+                                </Grid>
+
+                                <TextBlock Text="Buffer Access Token (Cifrado com Windows DPAPI):" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                <TextBox Style="{StaticResource FlatTextBox}" Text="{Binding BufferTokenInput, UpdateSourceTrigger=PropertyChanged}"
+                                         Tag="Cole seu Buffer Access Token aqui..." Margin="0,0,0,12"/>
+
+                                <TextBlock Text="Comando do Servidor Buffer MCP:" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                <TextBox Style="{StaticResource FlatTextBox}" Text="{Binding Settings.BufferMcpCommand, UpdateSourceTrigger=PropertyChanged}"
+                                         Tag="'internal' para o servidor Node embutido, ou caminho de executável..." Margin="0,0,0,6"/>
+                                <TextBlock Text="Padrão: 'internal' (executa Server/buffer-mcp.js com isolamento Job Object e sem portas de rede abertas)."
+                                           Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" Margin="0,0,0,12"/>
+
+                                <TextBlock Text="Canais Detectados no Buffer:" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                                <ItemsControl ItemsSource="{Binding BufferProfiles}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Background="#252525" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Padding="10,6" Margin="0,0,0,4">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" Style="{StaticResource FlatCheckBox}" Margin="0,0,10,0"/>
+                                                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding FormattedService}" FontWeight="Bold" Foreground="{StaticResource AccentBrush}" Margin="0,0,8,0"/>
+                                                        <TextBlock Text="{Binding FormattedUsername}" Foreground="#FFFFFF"/>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Seção 2: Automação Proativa e Toast Notifications -->
+                        <TextBlock Text="Automação Proativa &amp; Notificações Windows 10" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                        <Border Background="{StaticResource CardBgBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Padding="14" Margin="0,0,0,16">
+                            <StackPanel>
+                                <CheckBox Style="{StaticResource FlatCheckBox}" Content="Ativar geração matinal proativa diária"
+                                          IsChecked="{Binding Settings.AutoGenerateDaily}" Margin="0,0,0,12"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="120"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="Horário de Disparo Diário: " VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                    <TextBox Grid.Column="1" Style="{StaticResource FlatTextBox}" Text="{Binding Settings.NotificationTime, UpdateSourceTrigger=PropertyChanged}"/>
+                                    <TextBlock Grid.Column="2" Text="(Dispara a ideação em background e emite Toast com botão de aprovação imediata)"
+                                               Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="10,0,0,0" FontSize="11"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Seção 3: Motor de Inteligência Artificial -->
+                        <TextBlock Text="Motor de Inteligência Artificial (LLM Opcional)" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                        <Border Background="{StaticResource CardBgBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Padding="14" Margin="0,0,0,16">
+                            <StackPanel>
+                                <TextBlock Text="Provedor de IA:" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                <ComboBox SelectedValue="{Binding Settings.AiProvider}" SelectedValuePath="Content"
+                                          Background="{StaticResource SurfaceBgBrush}" Foreground="#FFFFFF" BorderBrush="{StaticResource BorderBrush}" Margin="0,0,0,12">
+                                    <ComboBoxItem Content="Local Heuristic / Motor Nativo (Offline)"/>
+                                    <ComboBoxItem Content="OpenAI (GPT-4o-mini)"/>
+                                    <ComboBoxItem Content="Anthropic Claude"/>
+                                    <ComboBoxItem Content="Google Gemini"/>
+                                    <ComboBoxItem Content="Ollama Local (http://localhost:11434)"/>
+                                </ComboBox>
+
+                                <TextBlock Text="Chave de API (Cifrada com Windows DPAPI):" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                <TextBox Style="{StaticResource FlatTextBox}" Text="{Binding AiApiKeyInput, UpdateSourceTrigger=PropertyChanged}"
+                                         Tag="Deixe em branco para usar o motor algorítmico offline nativo..." Margin="0,0,0,12"/>
+
+                                <TextBlock Text="Nome do Modelo (Opcional):" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                <TextBox Style="{StaticResource FlatTextBox}" Text="{Binding Settings.AiModel, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Botão Salvar Todas as Configurações -->
+                        <Button Style="{StaticResource FlatPrimaryButton}" Content="Salvar Configurações e Atualizar Subsistemas"
+                                Command="{Binding SaveSettingsCommand}" HorizontalAlignment="Right" Padding="20,10"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+        </TabControl>
+
+        <!-- 3: STATUS BAR FLAT NATIVA -->
+        <Border Grid.Row="3" Background="#161616" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0" Padding="16,0">
+            <Grid VerticalAlignment="Center">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Status de Conexão MCP e Próxima Geração -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="Status: " Foreground="{StaticResource TextSecondaryBrush}" FontSize="12"/>
+                    <TextBlock Text="{Binding McpStatusText}" Foreground="#FFFFFF" FontSize="12" Margin="0,0,16,0"/>
+                    <TextBlock Text="|   Próxima geração: " Foreground="{StaticResource TextSecondaryBrush}" FontSize="12"/>
+                    <TextBlock Text="{Binding NextRunText}" Foreground="{StaticResource AccentBrush}" FontWeight="SemiBold" FontSize="12"/>
+                </StackPanel>
+
+                <!-- RAM e Versão Nativa -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding RamText}" Foreground="#00CC6A" FontFamily="Consolas" FontSize="12" Margin="0,0,16,0"/>
+                    <TextBlock Text="Uttu v1.0 Nativo · Windows 10" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

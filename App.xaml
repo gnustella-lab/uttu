@@ -1,0 +1,18 @@
+<Application x:Class="Uttu.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:Uttu"
+             xmlns:helpers="clr-namespace:Uttu.Helpers"
+             StartupUri="MainWindow.xaml">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/Resources/Styles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <helpers:BoolToVisibilityConverter x:Key="BoolToVisibility"/>
+            <helpers:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisibility"/>
+            <helpers:OverLimitToBrushConverter x:Key="OverLimitToBrush"/>
+            <helpers:PlatformToBrushConverter x:Key="PlatformToBrush"/>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>
