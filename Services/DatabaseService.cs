@@ -119,13 +119,13 @@ public class DatabaseService
     {
         var defaults = new (string text, bool active, string category)[]
         {
-            ("Ganchos curtos funcionam melhor que perguntas genéricas.", true, "Ganchos"),
-            ("Tom pragmático: foco em engenharia e produtos de software.", true, "Tom"),
-            ("Usar emojis no início dos tópicos.", false, "Formatação"),
-            ("Espaçamento vertical com quebra dupla de linha no LinkedIn.", true, "Formatação"),
-            ("Nunca usar jargões vazios como 'sinergia' ou 'game changer'.", true, "Regras"),
-            ("Foque em aprendizados reais de produção e menos teoria abstrata.", true, "Tom"),
-            ("Primeiras 2 linhas decidem 80% do alcance no X e LinkedIn.", true, "Ganchos")
+            ("Short direct hooks consistently outperform generic questions.", true, "Hooks"),
+            ("Pragmatic tone: focus on real software engineering and product realities.", true, "Tone"),
+            ("Use emojis at the start of bullet points.", false, "Formatting"),
+            ("Vertical double line-spacing for high readability on LinkedIn.", true, "Formatting"),
+            ("Never use hollow buzzwords like 'synergy', 'game changer', or 'mindset'.", true, "Rules"),
+            ("Highlight real production lessons rather than abstract theory.", true, "Tone"),
+            ("The first two lines determine 80% of reach on X and LinkedIn.", true, "Hooks")
         };
 
         foreach (var item in defaults)
@@ -143,16 +143,16 @@ public class DatabaseService
     private async Task SeedInitialPostsAsync(SqliteConnection connection)
     {
         var post1 = (
-            theme: "Menos funcionalidades e mais clareza",
+            theme: "Fewer features and more clarity",
             platform: "X",
-            content: "Um produto não precisa de mais funcionalidades para ser melhor.\n\nÀs vezes, o próximo passo é tirar uma dúvida e deixar uma decisão mais clara para o usuário.",
+            content: "A product does not need more features to be better.\n\nOften, the best next step is removing doubt and making a decision clearer for the user.",
             status: "Draft"
         );
 
         var post2 = (
-            theme: "Redução de complexidade no backlog",
+            theme: "Pruning complexity in the backlog",
             platform: "LinkedIn",
-            content: "Nem toda melhoria começa com uma função nova no backlog.\n\nNa última semana decidimos podar três telas do fluxo de onboarding.\n\nO resultado? Menos chamados de suporte e aumento de retenção.\n\nMenos é clareza.",
+            content: "Not every improvement begins with a new feature in the backlog.\n\nLast week we decided to prune three screens from our onboarding flow.\n\nThe result? Fewer support tickets and higher user retention.\n\nLess is clarity.",
             status: "Draft"
         );
 
@@ -177,12 +177,12 @@ public class DatabaseService
             INSERT INTO voice_profiles (sample_text, avg_sentence_length, punctuation_density, prohibited_words, hook_style, tone_keywords, analyzed_at)
             VALUES (@sample, @avgLen, @punc, @prohibited, @hook, @tone, @analyzed);
         """;
-        cmd.Parameters.AddWithValue("@sample", "Menos código é menos débito. Em software, a simplicidade é o ápice do design.");
+        cmd.Parameters.AddWithValue("@sample", "Less code means less debt. In software engineering, simplicity is the pinnacle of design.");
         cmd.Parameters.AddWithValue("@avgLen", 11.8);
         cmd.Parameters.AddWithValue("@punc", 6.5);
-        cmd.Parameters.AddWithValue("@prohibited", "sinergia, disruptivo, revolucionário, game changer, alavancar, mindset");
-        cmd.Parameters.AddWithValue("@hook", "Contrário / Provocativo (Gancho curto direto ao ponto)");
-        cmd.Parameters.AddWithValue("@tone", "Pragmático, Direto, Engenharia, Sem enrolação");
+        cmd.Parameters.AddWithValue("@prohibited", "synergy, disruptive, revolutionary, game changer, leverage, mindset");
+        cmd.Parameters.AddWithValue("@hook", "Contrarian / Provocative (Short direct hook)");
+        cmd.Parameters.AddWithValue("@tone", "Pragmatic, Direct, Engineering-focused, Zero fluff");
         cmd.Parameters.AddWithValue("@analyzed", DateTime.Now.ToString("o"));
         await cmd.ExecuteNonQueryAsync();
     }

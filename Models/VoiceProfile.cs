@@ -9,9 +9,9 @@ public class VoiceProfile : INotifyPropertyChanged
     private string _sampleText = string.Empty;
     private double _avgSentenceLength = 12.5; // Words per sentence
     private double _punctuationDensity = 7.2; // Punctuation per 100 words
-    private string _prohibitedWords = "sinergia, disruptivo, revolucionário, game changer, alavancar, mindset";
-    private string _hookStyle = "Contrário / Provocativo (Gancho curto direto ao ponto)";
-    private string _toneKeywords = "Pragmático, Direto, Engenharia, Sem enrolação, Foco em produto";
+    private string _prohibitedWords = "synergy, disruptive, revolutionary, game changer, leverage, mindset";
+    private string _hookStyle = "Contrarian / Provocative (Short direct hook)";
+    private string _toneKeywords = "Pragmatic, Direct, Engineering-focused, Zero fluff, Product-driven";
     private DateTime _analyzedAt = DateTime.Now;
 
     public int Id

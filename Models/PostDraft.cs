@@ -71,7 +71,7 @@ public class PostDraft : INotifyPropertyChanged
 
     public bool IsOverLimit => CharCount > CharLimit;
 
-    public string CharCountDisplay => $"{CharCount} / {CharLimit} Caracteres";
+    public string CharCountDisplay => $"{CharCount} / {CharLimit} Characters";
 
     public string PlatformBadge => Platform switch
     {

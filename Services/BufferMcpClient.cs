@@ -21,7 +21,7 @@ public class BufferMcpClient : IDisposable
     public BufferApiService ApiService { get; } = new();
 
     public bool IsConnected => _process != null && !_process.HasExited && _isInitialized;
-    public string StatusMessage { get; private set; } = "Desconectado";
+    public string StatusMessage { get; private set; } = "Disconnected";
 
     public event Action<string>? StatusChanged;
 
@@ -38,7 +38,7 @@ public class BufferMcpClient : IDisposable
 
         try
         {
-            StatusMessage = "Iniciando servidor Buffer MCP...";
+            StatusMessage = "Starting Buffer MCP server...";
             StatusChanged?.Invoke(StatusMessage);
 
             string exe;
@@ -81,13 +81,13 @@ public class BufferMcpClient : IDisposable
             _process = new Process { StartInfo = psi, EnableRaisingEvents = true };
             _process.Exited += (s, e) =>
             {
-                StatusMessage = "Processo MCP encerrado";
+                StatusMessage = "MCP process exited";
                 StatusChanged?.Invoke(StatusMessage);
             };
 
             if (!_process.Start())
             {
-                StatusMessage = "Falha ao iniciar processo MCP";
+                StatusMessage = "Failed to start MCP process";
                 StatusChanged?.Invoke(StatusMessage);
                 return false;
             }
@@ -113,13 +113,13 @@ public class BufferMcpClient : IDisposable
             await SendNotificationAsync("notifications/initialized", new JsonObject());
 
             _isInitialized = true;
-            StatusMessage = "Conectado ao Buffer MCP via Stdio";
+            StatusMessage = "Connected to Buffer MCP via Stdio";
             StatusChanged?.Invoke(StatusMessage);
             return true;
         }
         catch (Exception ex)
         {
-            StatusMessage = $"MCP fallback direto: {ex.Message}";
+            StatusMessage = $"MCP fallback: {ex.Message}";
             StatusChanged?.Invoke(StatusMessage);
             return false;
         }
@@ -514,9 +514,9 @@ public class BufferMcpClient : IDisposable
     {
         return new List<BufferProfile>
         {
-            new BufferProfile { Id = "prof_x_01", Service = "twitter", FormattedUsername = "@usuario", IsSelected = true, PendingUpdatesCount = 1 },
-            new BufferProfile { Id = "prof_li_02", Service = "linkedin", FormattedUsername = "Fundador / Criador", IsSelected = true, PendingUpdatesCount = 2 },
-            new BufferProfile { Id = "prof_th_03", Service = "threads", FormattedUsername = "@usuario", IsSelected = false, PendingUpdatesCount = 0 }
+            new BufferProfile { Id = "prof_x_01", Service = "twitter", FormattedUsername = "@user", IsSelected = true, PendingUpdatesCount = 1 },
+            new BufferProfile { Id = "prof_li_02", Service = "linkedin", FormattedUsername = "Founder / Builder", IsSelected = true, PendingUpdatesCount = 2 },
+            new BufferProfile { Id = "prof_th_03", Service = "threads", FormattedUsername = "@user", IsSelected = false, PendingUpdatesCount = 0 }
         };
     }
 

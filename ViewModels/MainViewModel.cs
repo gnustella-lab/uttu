@@ -36,20 +36,20 @@ public class MainViewModel : INotifyPropertyChanged
     private VoiceProfile _voiceProfile = new();
     private AppSettings _settings = new();
     private BufferUser? _currentBufferUser;
-    private string _bufferUserDisplay = "Token não verificado";
+    private string _bufferUserDisplay = "Token not verified";
     private int _selectedTabIndex = 0;
-    private string _selectedCategory = "Todas";
+    private string _selectedCategory = "All";
     private string _newMemoryText = string.Empty;
-    private string _newMemoryCategory = "Ganchos";
+    private string _newMemoryCategory = "Hooks";
     private string _samplePostsText = string.Empty;
     private string? _cardPreviewPath;
     private bool _cardPreviewDarkMode = true;
     private string _bufferTokenInput = string.Empty;
     private string _aiApiKeyInput = string.Empty;
-    private string _mcpStatusText = "Conectando ao Buffer MCP...";
-    private string _nextRunText = "08:30 (Amanhã)";
+    private string _mcpStatusText = "Connecting to Buffer MCP...";
+    private string _nextRunText = "08:30 (Tomorrow)";
     private string _ramText = "RAM: ~45 MB";
-    private string _selectedChannelDisplay = "X @usuario | LinkedIn";
+    private string _selectedChannelDisplay = "X @user | LinkedIn";
     private bool _isLoading;
     private string _infoBannerMessage = string.Empty;
 
@@ -202,6 +202,7 @@ public class MainViewModel : INotifyPropertyChanged
     public ICommand ToggleMemoryCommand { get; }
     public ICommand DeleteMemoryCommand { get; }
     public ICommand AddMemoryCommand { get; }
+    public ICommand FilterCategoryCommand { get; }
     public ICommand CalibrateVoiceCommand { get; }
     public ICommand SaveVoiceCommand { get; }
     public ICommand SaveSettingsCommand { get; }
@@ -237,6 +238,7 @@ public class MainViewModel : INotifyPropertyChanged
         ToggleMemoryCommand = new RelayCommand(async m => await ToggleMemoryAsync(m as MemoryItem));
         DeleteMemoryCommand = new RelayCommand(async m => await DeleteMemoryAsync(m as MemoryItem));
         AddMemoryCommand = new RelayCommand(async _ => await AddMemoryAsync());
+        FilterCategoryCommand = new RelayCommand(cat => SelectedCategory = cat?.ToString() ?? "All");
         CalibrateVoiceCommand = new RelayCommand(_ => CalibrateVoice());
         SaveVoiceCommand = new RelayCommand(async _ => await SaveVoiceAsync());
         SaveSettingsCommand = new RelayCommand(async _ => await SaveSettingsAsync());
@@ -374,15 +376,15 @@ public class MainViewModel : INotifyPropertyChanged
     {
         if (string.IsNullOrWhiteSpace(BufferTokenInput))
         {
-            BufferUserDisplay = "Nenhum token fornecido";
-            if (!silent) InfoBannerMessage = "Por favor, informe seu Buffer Access Token.";
+            BufferUserDisplay = "No token provided";
+            if (!silent) InfoBannerMessage = "Please enter your Buffer Access Token.";
             return;
         }
 
         if (!silent)
         {
             IsLoading = true;
-            InfoBannerMessage = "Conectando à API do Buffer (api.bufferapp.com)...";
+            InfoBannerMessage = "Connecting to Buffer API (api.bufferapp.com)...";
         }
 
         try
@@ -391,7 +393,7 @@ public class MainViewModel : INotifyPropertyChanged
             if (userSuccess && user != null)
             {
                 CurrentBufferUser = user;
-                BufferUserDisplay = $"✓ Conectado: {user.Email} (Plano: {user.Plan})";
+                BufferUserDisplay = $"✓ Connected: {user.Email} (Plan: {user.Plan})";
 
                 var (profSuccess, profiles, profErr) = await _mcp.ApiService.GetProfilesAsync(BufferTokenInput);
                 if (profSuccess && profiles.Count > 0)
@@ -406,29 +408,29 @@ public class MainViewModel : INotifyPropertyChanged
 
                     if (!silent)
                     {
-                        InfoBannerMessage = $"✓ Sucesso! Conectado à conta Buffer de {user.Email} com {profiles.Count} canal(is) mapeados.";
+                        InfoBannerMessage = $"✓ Success! Connected to Buffer account {user.Email} with {profiles.Count} channel(s) mapped.";
                     }
                 }
                 else if (!silent)
                 {
-                    InfoBannerMessage = $"✓ Token válido para {user.Email}, mas nenhum canal conectado no Buffer.";
+                    InfoBannerMessage = $"✓ Token valid for {user.Email}, but no channels connected in Buffer.";
                 }
             }
             else
             {
-                BufferUserDisplay = "Token inválido ou desconectado";
+                BufferUserDisplay = "Invalid or disconnected token";
                 if (!silent)
                 {
-                    InfoBannerMessage = $"Falha ao autenticar na API do Buffer: {userErr}";
+                    InfoBannerMessage = $"Failed to authenticate with Buffer API: {userErr}";
                 }
             }
         }
         catch (Exception ex)
         {
-            BufferUserDisplay = "Erro de conexão com Buffer";
+            BufferUserDisplay = "Buffer connection error";
             if (!silent)
             {
-                InfoBannerMessage = $"Erro ao contatar API do Buffer: {ex.Message}";
+                InfoBannerMessage = $"Error connecting to Buffer API: {ex.Message}";
             }
         }
         finally
@@ -472,12 +474,12 @@ public class MainViewModel : INotifyPropertyChanged
             {
                 PendingBufferUpdates.Remove(update);
                 OnPropertyChanged(nameof(PendingQueueCount));
-                InfoBannerMessage = "✓ Post cancelado e removido da fila do Buffer.";
+                InfoBannerMessage = "✓ Post cancelled and removed from Buffer queue.";
             }
         }
         catch (Exception ex)
         {
-            InfoBannerMessage = $"Erro ao remover do Buffer: {ex.Message}";
+            InfoBannerMessage = $"Error removing from Buffer: {ex.Message}";
         }
         finally
         {
@@ -494,14 +496,14 @@ public class MainViewModel : INotifyPropertyChanged
         }
         else
         {
-            SelectedChannelDisplay = "X @usuario | LinkedIn";
+            SelectedChannelDisplay = "X @user | LinkedIn";
         }
     }
 
     private void ApplyMemoryFilter()
     {
         FilteredMemories.Clear();
-        var list = SelectedCategory == "Todas"
+        var list = (SelectedCategory == "All" || SelectedCategory == "Todas")
             ? Memories
             : Memories.Where(m => m.Category.Equals(SelectedCategory, StringComparison.OrdinalIgnoreCase));
 
@@ -517,7 +519,7 @@ public class MainViewModel : INotifyPropertyChanged
         {
             using var proc = Process.GetCurrentProcess();
             long mb = proc.WorkingSet64 / (1024 * 1024);
-            RamText = $"RAM: {mb} MB (Standby Nativo)";
+            RamText = $"RAM: {mb} MB (Native Standby)";
         }
         catch { }
     }
@@ -527,16 +529,16 @@ public class MainViewModel : INotifyPropertyChanged
     public async Task GenerateDraftsAsync()
     {
         IsLoading = true;
-        InfoBannerMessage = "Gerando novos rascunhos proativos com base nas memórias ativas...";
+        InfoBannerMessage = "Generating new proactive drafts based on active memories...";
         try
         {
             var newDrafts = await _scheduler.TriggerNowAsync();
             NextRunText = _scheduler.NextRunFormatted;
-            InfoBannerMessage = $"{newDrafts.Count} novos rascunhos formulados com sucesso!";
+            InfoBannerMessage = $"{newDrafts.Count} new drafts generated successfully!";
         }
         catch (Exception ex)
         {
-            InfoBannerMessage = $"Erro ao gerar rascunhos: {ex.Message}";
+            InfoBannerMessage = $"Error generating drafts: {ex.Message}";
         }
         finally
         {
@@ -569,12 +571,12 @@ public class MainViewModel : INotifyPropertyChanged
             // Refresh queue to show the newly added post
             await RefreshBufferQueueAsync();
 
-            InfoBannerMessage = $"✓ Post aprovado e enviado para a fila do Buffer! ({result.Message})";
-            _toastService.ShowSuccessToast("Uttu · Post Aprovado", $"Enviado com sucesso à fila do Buffer ({draft.Platform})");
+            InfoBannerMessage = $"✓ Post approved and added to Buffer queue! ({result.Message})";
+            _toastService.ShowSuccessToast("Uttu · Post Approved", $"Successfully added to Buffer queue ({draft.Platform})");
         }
         catch (Exception ex)
         {
-            InfoBannerMessage = $"Erro ao aprovar post: {ex.Message}";
+            InfoBannerMessage = $"Error approving post: {ex.Message}";
         }
         finally
         {
@@ -601,12 +603,12 @@ public class MainViewModel : INotifyPropertyChanged
             Drafts.Remove(draft);
             OnPropertyChanged(nameof(DraftsCount));
 
-            InfoBannerMessage = $"✓ Publicado imediatamente na rede social via Buffer MCP!";
-            _toastService.ShowSuccessToast("Uttu · Publicação Imediata", $"Publicado com sucesso no canal {draft.Platform}");
+            InfoBannerMessage = "✓ Published immediately to social channel via Buffer MCP!";
+            _toastService.ShowSuccessToast("Uttu · Published Immediately", $"Successfully published to {draft.Platform} channel");
         }
         catch (Exception ex)
         {
-            InfoBannerMessage = $"Erro ao publicar: {ex.Message}";
+            InfoBannerMessage = $"Error publishing: {ex.Message}";
         }
         finally
         {
@@ -622,7 +624,7 @@ public class MainViewModel : INotifyPropertyChanged
         await _db.DeletePostAsync(draft.Id);
         Drafts.Remove(draft);
         OnPropertyChanged(nameof(DraftsCount));
-        InfoBannerMessage = "Rascunho descartado.";
+        InfoBannerMessage = "Draft discarded.";
     }
 
     public async Task RefineDraftAsync(PostDraft? draft)
@@ -640,11 +642,11 @@ public class MainViewModel : INotifyPropertyChanged
             draft.RefinePrompt = string.Empty;
             await _db.SavePostAsync(draft);
 
-            InfoBannerMessage = "✓ Texto refinado com sucesso!";
+            InfoBannerMessage = "✓ Content refined successfully!";
         }
         catch (Exception ex)
         {
-            InfoBannerMessage = $"Erro no refinamento: {ex.Message}";
+            InfoBannerMessage = $"Refinement error: {ex.Message}";
         }
         finally
         {
@@ -671,11 +673,11 @@ public class MainViewModel : INotifyPropertyChanged
 
             CardPreviewPath = cardPath;
             SelectedTabIndex = 3;
-            InfoBannerMessage = "✓ Cartão 1600x900 gerado com sucesso via SkiaSharp!";
+            InfoBannerMessage = "✓ 1600×900 card generated successfully via SkiaSharp!";
         }
         catch (Exception ex)
         {
-            InfoBannerMessage = $"Erro ao gerar cartão: {ex.Message}";
+            InfoBannerMessage = $"Error generating card: {ex.Message}";
         }
         finally
         {
@@ -712,7 +714,7 @@ public class MainViewModel : INotifyPropertyChanged
         var newItem = new MemoryItem
         {
             Text = NewMemoryText.Trim(),
-            Category = string.IsNullOrWhiteSpace(NewMemoryCategory) ? "Regras" : NewMemoryCategory,
+            Category = string.IsNullOrWhiteSpace(NewMemoryCategory) ? "Rules" : NewMemoryCategory,
             IsActive = true,
             CreatedAt = DateTime.Now
         };
@@ -722,7 +724,7 @@ public class MainViewModel : INotifyPropertyChanged
         ApplyMemoryFilter();
         NewMemoryText = string.Empty;
         OnPropertyChanged(nameof(ActiveMemoriesCount));
-        InfoBannerMessage = "✓ Nova memória adicionada à central de contexto.";
+        InfoBannerMessage = "✓ New memory added to context engine.";
     }
 
     #endregion
@@ -733,19 +735,19 @@ public class MainViewModel : INotifyPropertyChanged
     {
         if (string.IsNullOrWhiteSpace(SamplePostsText))
         {
-            InfoBannerMessage = "Cole exemplos de postagens anteriores para calibrar o tom.";
+            InfoBannerMessage = "Paste previous post samples to calibrate tone.";
             return;
         }
 
         VoiceProfile = _toneAnalyzer.AnalyzeSamples(SamplePostsText);
-        InfoBannerMessage = "✓ Métricas linguísticas e perfil de tom calibrados com sucesso!";
+        InfoBannerMessage = "✓ Linguistic metrics and tone profile calibrated successfully!";
     }
 
     public async Task SaveVoiceAsync()
     {
         VoiceProfile.SampleText = SamplePostsText;
         await _db.SaveVoiceProfileAsync(VoiceProfile);
-        InfoBannerMessage = "✓ Perfil de voz gravado no SQLite local com sucesso.";
+        InfoBannerMessage = "✓ Voice profile saved to local SQLite successfully.";
     }
 
     #endregion
@@ -761,7 +763,7 @@ public class MainViewModel : INotifyPropertyChanged
         _scheduler.UpdateSettings(Settings);
         NextRunText = _scheduler.NextRunFormatted;
 
-        InfoBannerMessage = "✓ Configurações e tokens gravados com segurança (DPAPI).";
+        InfoBannerMessage = "✓ Settings and tokens securely saved (Windows DPAPI).";
 
         await InitializeMcpAsync();
         await TestBufferTokenAsync(silent: false);

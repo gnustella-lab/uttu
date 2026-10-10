@@ -75,7 +75,7 @@ public static class JobObjectManager
                 _jobHandle = CreateJobObject(IntPtr.Zero, null);
                 if (_jobHandle == IntPtr.Zero)
                 {
-                    Debug.WriteLine($"[JobObjectManager] Falha ao criar Job Object. Erro Win32: {Marshal.GetLastWin32Error()}");
+                    Debug.WriteLine($"[JobObjectManager] Failed to create Job Object. Win32 error: {Marshal.GetLastWin32Error()}");
                     return;
                 }
 
@@ -89,11 +89,11 @@ public static class JobObjectManager
                     Marshal.StructureToPtr(info, extendedInfoPtr, false);
                     if (!SetInformationJobObject(_jobHandle, JobObjectExtendedLimitInformation, extendedInfoPtr, (uint)length))
                     {
-                        Debug.WriteLine($"[JobObjectManager] Falha ao configurar Job Object. Erro Win32: {Marshal.GetLastWin32Error()}");
+                        Debug.WriteLine($"[JobObjectManager] Failed to configure Job Object. Win32 error: {Marshal.GetLastWin32Error()}");
                     }
                     else
                     {
-                        Debug.WriteLine("[JobObjectManager] Job Object configurado com sucesso com KILL_ON_JOB_CLOSE.");
+                        Debug.WriteLine("[JobObjectManager] Job Object successfully configured with KILL_ON_JOB_CLOSE.");
                     }
                 }
                 finally
@@ -103,7 +103,7 @@ public static class JobObjectManager
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[JobObjectManager] Exceção ao inicializar Job Object: {ex.Message}");
+                Debug.WriteLine($"[JobObjectManager] Exception initializing Job Object: {ex.Message}");
             }
         }
     }
@@ -125,17 +125,17 @@ public static class JobObjectManager
                 bool result = AssignProcessToJobObject(_jobHandle, process.Handle);
                 if (!result)
                 {
-                    Debug.WriteLine($"[JobObjectManager] Falha ao associar processo PID={process.Id}. Erro Win32: {Marshal.GetLastWin32Error()}");
+                    Debug.WriteLine($"[JobObjectManager] Failed to assign process PID={process.Id}. Win32 error: {Marshal.GetLastWin32Error()}");
                 }
                 else
                 {
-                    Debug.WriteLine($"[JobObjectManager] Processo PID={process.Id} associado com sucesso ao Job Object.");
+                    Debug.WriteLine($"[JobObjectManager] Process PID={process.Id} successfully assigned to Job Object.");
                 }
                 return result;
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[JobObjectManager] Exceção ao associar processo: {ex.Message}");
+                Debug.WriteLine($"[JobObjectManager] Exception assigning process: {ex.Message}");
                 return false;
             }
         }

@@ -23,7 +23,7 @@ public class BufferApiService
     {
         if (string.IsNullOrWhiteSpace(accessToken))
         {
-            return (false, null, "Buffer Access Token não informado.");
+            return (false, null, "Buffer Access Token not provided.");
         }
 
         try
@@ -33,13 +33,13 @@ public class BufferApiService
 
             if (response.StatusCode == HttpStatusCode.Unauthorized)
             {
-                return (false, null, "Token do Buffer inválido ou expirado (HTTP 401 Unauthorized).");
+                return (false, null, "Invalid or expired Buffer token (HTTP 401 Unauthorized).");
             }
 
             if (!response.IsSuccessStatusCode)
             {
                 string body = await response.Content.ReadAsStringAsync();
-                return (false, null, $"Falha na API do Buffer: {(int)response.StatusCode} {response.ReasonPhrase}. {body}");
+                return (false, null, $"Buffer API error: {(int)response.StatusCode} {response.ReasonPhrase}. {body}");
             }
 
             string json = await response.Content.ReadAsStringAsync();
@@ -51,7 +51,7 @@ public class BufferApiService
                 Id = root.TryGetProperty("id", out var idP) ? idP.GetString() ?? "" : "",
                 Email = root.TryGetProperty("email", out var eP) ? eP.GetString() ?? "" : "",
                 Plan = root.TryGetProperty("plan", out var plP) ? plP.GetString() ?? "Free" : "Free",
-                Timezone = root.TryGetProperty("timezone", out var tzP) ? tzP.GetString() ?? "America/Sao_Paulo" : "America/Sao_Paulo"
+                Timezone = root.TryGetProperty("timezone", out var tzP) ? tzP.GetString() ?? "UTC" : "UTC"
             };
 
             if (root.TryGetProperty("created_at", out var catP) && catP.TryGetInt64(out long createdUnix))
@@ -64,7 +64,7 @@ public class BufferApiService
         catch (Exception ex)
         {
             Debug.WriteLine($"[BufferApiService] GetUserAsync error: {ex.Message}");
-            return (false, null, $"Erro de conexão com a API do Buffer: {ex.Message}");
+            return (false, null, $"Buffer connection error: {ex.Message}");
         }
     }
 
@@ -72,7 +72,7 @@ public class BufferApiService
     {
         if (string.IsNullOrWhiteSpace(accessToken))
         {
-            return (false, new List<BufferProfile>(), "Buffer Access Token não informado.");
+            return (false, new List<BufferProfile>(), "Buffer Access Token not provided.");
         }
 
         try
@@ -82,13 +82,13 @@ public class BufferApiService
 
             if (response.StatusCode == HttpStatusCode.Unauthorized)
             {
-                return (false, new List<BufferProfile>(), "Token do Buffer inválido (HTTP 401 Unauthorized).");
+                return (false, new List<BufferProfile>(), "Invalid Buffer token (HTTP 401 Unauthorized).");
             }
 
             if (!response.IsSuccessStatusCode)
             {
                 string body = await response.Content.ReadAsStringAsync();
-                return (false, new List<BufferProfile>(), $"Erro na API do Buffer ({(int)response.StatusCode}): {body}");
+                return (false, new List<BufferProfile>(), $"Buffer API error ({(int)response.StatusCode}): {body}");
             }
 
             string json = await response.Content.ReadAsStringAsync();
@@ -103,9 +103,9 @@ public class BufferApiService
                     string service = p.TryGetProperty("service", out var sP) ? sP.GetString() ?? "x" : "x";
                     string formattedUser = p.TryGetProperty("formatted_username", out var fuP) 
                         ? fuP.GetString() ?? "" 
-                        : (p.TryGetProperty("service_username", out var suP) ? suP.GetString() ?? "@usuario" : "@usuario");
+                        : (p.TryGetProperty("service_username", out var suP) ? suP.GetString() ?? "@user" : "@user");
                     string? avatar = p.TryGetProperty("avatar", out var aP) ? aP.GetString() : null;
-                    string timezone = p.TryGetProperty("timezone", out var tzP) ? tzP.GetString() ?? "America/Sao_Paulo" : "America/Sao_Paulo";
+                    string timezone = p.TryGetProperty("timezone", out var tzP) ? tzP.GetString() ?? "UTC" : "UTC";
 
                     int pendingCount = 0;
                     int sentCount = 0;
@@ -134,7 +134,7 @@ public class BufferApiService
         catch (Exception ex)
         {
             Debug.WriteLine($"[BufferApiService] GetProfilesAsync error: {ex.Message}");
-            return (false, new List<BufferProfile>(), $"Erro ao consultar canais do Buffer: {ex.Message}");
+            return (false, new List<BufferProfile>(), $"Error fetching Buffer channels: {ex.Message}");
         }
     }
 
@@ -142,7 +142,7 @@ public class BufferApiService
     {
         if (string.IsNullOrWhiteSpace(accessToken) || string.IsNullOrWhiteSpace(profileId))
         {
-            return (false, new List<BufferUpdate>(), "Parâmetros inválidos.");
+            return (false, new List<BufferUpdate>(), "Invalid parameters.");
         }
 
         try
@@ -153,7 +153,7 @@ public class BufferApiService
             if (!response.IsSuccessStatusCode)
             {
                 string body = await response.Content.ReadAsStringAsync();
-                return (false, new List<BufferUpdate>(), $"Erro ao buscar fila pendente: {body}");
+                return (false, new List<BufferUpdate>(), $"Error fetching pending queue: {body}");
             }
 
             string json = await response.Content.ReadAsStringAsync();
@@ -196,7 +196,7 @@ public class BufferApiService
         }
         catch (Exception ex)
         {
-            return (false, new List<BufferUpdate>(), $"Erro ao buscar updates pendentes: {ex.Message}");
+            return (false, new List<BufferUpdate>(), $"Error fetching pending updates: {ex.Message}");
         }
     }
 
@@ -210,17 +210,17 @@ public class BufferApiService
     {
         if (string.IsNullOrWhiteSpace(accessToken))
         {
-            return (false, null, "", "Token de acesso do Buffer não fornecido.");
+            return (false, null, "", "Buffer Access Token not provided.");
         }
 
         if (profileIds == null || profileIds.Count == 0)
         {
-            return (false, null, "", "Nenhum canal do Buffer selecionado.");
+            return (false, null, "", "No Buffer channel selected.");
         }
 
         if (string.IsNullOrWhiteSpace(text))
         {
-            return (false, null, "", "Conteúdo do post não pode ser vazio.");
+            return (false, null, "", "Post text cannot be empty.");
         }
 
         try
@@ -257,7 +257,7 @@ public class BufferApiService
 
             if (!response.IsSuccessStatusCode)
             {
-                return (false, null, "", $"Buffer API erro ({(int)response.StatusCode}): {body}");
+                return (false, null, "", $"Buffer API error ({(int)response.StatusCode}): {body}");
             }
 
             using var doc = JsonDocument.Parse(body);
@@ -278,8 +278,8 @@ public class BufferApiService
             if (string.IsNullOrEmpty(message))
             {
                 message = publishNow 
-                    ? "Post publicado imediatamente via Buffer." 
-                    : "Post adicionado à fila do Buffer com sucesso.";
+                    ? "Post published immediately via Buffer." 
+                    : "Post added to Buffer queue successfully.";
             }
 
             return (success, updateId, message, string.Empty);
@@ -287,7 +287,7 @@ public class BufferApiService
         catch (Exception ex)
         {
             Debug.WriteLine($"[BufferApiService] CreateUpdateAsync error: {ex.Message}");
-            return (false, null, "", $"Exceção ao enviar para Buffer: {ex.Message}");
+            return (false, null, "", $"Exception sending update to Buffer: {ex.Message}");
         }
     }
 
@@ -295,7 +295,7 @@ public class BufferApiService
     {
         if (string.IsNullOrWhiteSpace(accessToken) || string.IsNullOrWhiteSpace(updateId))
         {
-            return (false, "Parâmetros inválidos.");
+            return (false, "Invalid parameters.");
         }
 
         try
@@ -312,14 +312,14 @@ public class BufferApiService
             if (!response.IsSuccessStatusCode)
             {
                 string body = await response.Content.ReadAsStringAsync();
-                return (false, $"Erro ao cancelar update no Buffer: {body}");
+                return (false, $"Error canceling update in Buffer: {body}");
             }
 
             return (true, string.Empty);
         }
         catch (Exception ex)
         {
-            return (false, $"Exceção ao cancelar update: {ex.Message}");
+            return (false, $"Exception canceling update: {ex.Message}");
         }
     }
 
@@ -327,7 +327,7 @@ public class BufferApiService
     {
         if (string.IsNullOrWhiteSpace(accessToken) || string.IsNullOrWhiteSpace(updateId))
         {
-            return (false, "Parâmetros inválidos.");
+            return (false, "Invalid parameters.");
         }
 
         try
@@ -344,14 +344,14 @@ public class BufferApiService
             if (!response.IsSuccessStatusCode)
             {
                 string body = await response.Content.ReadAsStringAsync();
-                return (false, $"Erro ao publicar imediatamente: {body}");
+                return (false, $"Error sharing immediately: {body}");
             }
 
             return (true, string.Empty);
         }
         catch (Exception ex)
         {
-            return (false, $"Exceção ao publicar: {ex.Message}");
+            return (false, $"Exception sharing update: {ex.Message}");
         }
     }
 }

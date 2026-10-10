@@ -13,13 +13,13 @@ public class ToastNotificationService
     {
         try
         {
-            // Listener de ativações interativas do Toast (Action Center do Windows 10)
+            // Interactive toast listener (Windows 10 Action Center)
             ToastNotificationManagerCompat.OnActivated += toastArgs =>
             {
                 var args = ToastArguments.Parse(toastArgs.Argument);
                 string action = args.TryGetValue("action", out var act) ? act : "open";
 
-                Debug.WriteLine($"[ToastNotificationService] Notificação ativada com ação: {action}");
+                Debug.WriteLine($"[ToastNotificationService] Notification activated with action: {action}");
 
                 if (action == "approve")
                 {
@@ -36,7 +36,7 @@ public class ToastNotificationService
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"[ToastNotificationService] Falha ao registrar ToastNotificationManagerCompat: {ex.Message}");
+            Debug.WriteLine($"[ToastNotificationService] Failed to register ToastNotificationManagerCompat: {ex.Message}");
         }
     }
 
@@ -47,7 +47,7 @@ public class ToastNotificationService
         try
         {
             var firstDraft = drafts.First();
-            string title = $"Uttu · {drafts.Count} novos rascunhos prontos";
+            string title = $"Uttu · {drafts.Count} new drafts ready";
             string preview = $"[{firstDraft.Platform}] {firstDraft.Content.Replace("\n", " ")}";
             if (preview.Length > 120)
             {
@@ -58,22 +58,22 @@ public class ToastNotificationService
                 .AddText(title)
                 .AddText(preview)
                 .AddButton(new ToastButton()
-                    .SetContent("Aprovar Agora")
+                    .SetContent("Approve Now")
                     .AddArgument("action", "approve")
                     .AddArgument("postId", firstDraft.Id.ToString())
                     .SetBackgroundActivation())
                 .AddButton(new ToastButton()
-                    .SetContent("Abrir Uttu")
+                    .SetContent("Open Uttu")
                     .AddArgument("action", "open"))
                 .AddButton(new ToastButton()
-                    .SetContent("Ignorar")
+                    .SetContent("Dismiss")
                     .AddArgument("action", "dismiss"));
 
             builder.Show();
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"[ToastNotificationService] Erro ao emitir Toast nativo: {ex.Message}");
+            Debug.WriteLine($"[ToastNotificationService] Error displaying native Toast: {ex.Message}");
         }
     }
 
@@ -88,7 +88,7 @@ public class ToastNotificationService
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"[ToastNotificationService] Erro ao emitir Toast de sucesso: {ex.Message}");
+            Debug.WriteLine($"[ToastNotificationService] Error displaying success Toast: {ex.Message}");
         }
     }
 }

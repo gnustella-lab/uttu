@@ -7,9 +7,9 @@ public class ToneAnalyzerService
 {
     private static readonly string[] ClichéList = new[]
     {
-        "sinergia", "disruptivo", "revolucionário", "game changer", "alavancar",
-        "mindset", "paradigma", "holístico", "ecossistema inovador", "resiliência 360",
-        "fora da caixa", "mergulho profundo", "quick win"
+        "synergy", "disruptive", "revolutionary", "game changer", "leverage",
+        "mindset", "paradigm", "holistic", "innovative ecosystem", "360 alignment",
+        "outside the box", "deep dive", "quick win"
     };
 
     public VoiceProfile AnalyzeSamples(string rawInput)
@@ -19,7 +19,7 @@ public class ToneAnalyzerService
             return new VoiceProfile();
         }
 
-        // Divide por delimitadores ou parágrafos
+        // Split by post delimiters or paragraphs
         var posts = rawInput.Split(new[] { "---", "===", "\n\n\n" }, StringSplitOptions.RemoveEmptyEntries)
                             .Select(p => p.Trim())
                             .Where(p => p.Length > 20)
@@ -30,24 +30,20 @@ public class ToneAnalyzerService
             posts.Add(rawInput.Trim());
         }
 
-        // Sentenças e palavras
         var allSentences = new List<string>();
         var allWords = new List<string>();
         int totalPunctuation = 0;
 
         foreach (var post in posts)
         {
-            // Punctuation count: . , ; : ! ? - em-dash
             var punctMatches = Regex.Matches(post, @"[.,;:!?—–\-\(\)]");
             totalPunctuation += punctMatches.Count;
 
-            // Sentenças
             var sentences = Regex.Split(post, @"(?<=[.!?])\s+")
                                  .Select(s => s.Trim())
                                  .Where(s => s.Length > 0);
             allSentences.AddRange(sentences);
 
-            // Palavras
             var words = Regex.Split(post, @"\W+")
                              .Where(w => w.Length > 0);
             allWords.AddRange(words);
@@ -59,19 +55,16 @@ public class ToneAnalyzerService
         double avgSentenceLength = Math.Round((double)wordCount / sentenceCount, 1);
         double punctuationDensity = Math.Round((double)totalPunctuation / wordCount * 100, 1);
 
-        // Análise de Ganchos (como os posts iniciam)
         string hookStyle = DetectHookStyle(posts);
 
-        // Detecção de Clichês encontrados para marcar como proibidos
         var prohibitedFound = ClichéList
             .Where(c => rawInput.IndexOf(c, StringComparison.OrdinalIgnoreCase) >= 0)
             .ToList();
 
         string prohibitedList = prohibitedFound.Count > 0 
             ? string.Join(", ", prohibitedFound) 
-            : "sinergia, disruptivo, revolucionário, game changer, alavancar, mindset";
+            : "synergy, disruptive, revolutionary, game changer, leverage, mindset";
 
-        // Detecção de tom dominante
         string toneKeywords = DetectToneKeywords(avgSentenceLength, punctuationDensity, posts);
 
         return new VoiceProfile
@@ -98,7 +91,7 @@ public class ToneAnalyzerService
             string firstLine = post.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "";
             firstLine = firstLine.Trim();
 
-            if (Regex.IsMatch(firstLine, @"^(Não|Nem|Pare|Esqueça|O maior erro|A maioria|Menos|Nenhum)\b", RegexOptions.IgnoreCase))
+            if (Regex.IsMatch(firstLine, @"^(Don't|Stop|Most|Never|Forget|Fewer|Less|No|Nem|Não)\b", RegexOptions.IgnoreCase))
             {
                 contrarianCount++;
             }
@@ -117,15 +110,15 @@ public class ToneAnalyzerService
         }
 
         if (contrarianCount >= 1)
-            return "Contrário / Provocativo (Quebra de crença comum na 1ª linha)";
+            return "Contrarian / Provocative (Breaks common assumption in 1st line)";
         if (directAssertionCount >= 1)
-            return "Afirmação Direta e Curta (Gancho sintético de alta clareza)";
+            return "Short Direct Assertion (High-clarity synthetic hook)";
         if (numericCount >= 1)
-            return "Baseado em Métricas / Numérico (Dados e listas compactas)";
+            return "Metrics-driven / Numeric (Data points and compact lists)";
         if (questionCount >= 1)
-            return "Pergunta Reflexiva (Desafio conceitual ao leitor)";
+            return "Reflective Question (Conceptual challenge to the reader)";
 
-        return "Pragmático e Condensado (Foco em produto e código)";
+        return "Pragmatic & Concise (Product and code focus)";
     }
 
     private string DetectToneKeywords(double avgSentenceLen, double puncDensity, List<string> posts)
@@ -133,20 +126,20 @@ public class ToneAnalyzerService
         var tones = new List<string>();
 
         if (avgSentenceLen < 12)
-            tones.Add("Extremamente Conciso");
+            tones.Add("Extremely Concise");
         else if (avgSentenceLen < 18)
-            tones.Add("Pragmático e Direto");
+            tones.Add("Pragmatic & Direct");
         else
-            tones.Add("Ensaístico e Reflexivo");
+            tones.Add("Reflective Essay");
 
         if (puncDensity > 8.0)
-            tones.Add("Ritmo Cadenciado");
+            tones.Add("Cadenced Rhythm");
         else
-            tones.Add("Fluxo Linear");
+            tones.Add("Linear Flow");
 
-        tones.Add("Engenharia de Software");
-        tones.Add("Zero Enrolação");
-        tones.Add("Foco em Produto");
+        tones.Add("Software Engineering");
+        tones.Add("Zero Fluff");
+        tones.Add("Product-driven");
 
         return string.Join(", ", tones);
     }

@@ -215,14 +215,14 @@ public class CardRendererService
         })
         {
             canvas.DrawText("UTTU DESKTOP", marginX, footerY, footerAccent);
-            canvas.DrawText(" · COPILOTO SOCIAL NATIVO (WINDOWS 10)", marginX + 145, footerY, footerPaint);
+            canvas.DrawText(" · NATIVE SOCIAL COPILOT (WINDOWS 10)", marginX + 145, footerY, footerPaint);
 
-            string metrics = $"{post.CharCount} CARACTERES · {DateTime.Now:dd/MM/yyyy}";
+            string metrics = $"{post.CharCount} CHARACTERS · {DateTime.Now:yyyy-MM-dd}";
             float metricsWidth = footerPaint.MeasureText(metrics);
             canvas.DrawText(metrics, width - marginX - metricsWidth, footerY, footerPaint);
         }
 
-        // Salvar em arquivo PNG no cache
+        // Save to PNG file in cache
         string fileName = $"card_{post.Id}_{DateTime.Now:yyyyMMdd_HHmmss}_{Guid.NewGuid():N}.png";
         string filePath = Path.Combine(_cacheDirectory, fileName);
 

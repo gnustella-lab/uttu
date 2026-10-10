@@ -24,7 +24,7 @@ public partial class MainWindow : Window
             }
         };
 
-        // Atalhos de teclado globais da janela
+        // Window global keyboard shortcuts
         PreviewKeyDown += MainWindow_PreviewKeyDown;
     }
 
@@ -32,7 +32,7 @@ public partial class MainWindow : Window
     {
         if (DataContext is not MainViewModel vm) return;
 
-        // Ctrl+Enter: Aprova o primeiro rascunho visível
+        // Ctrl+Enter: Approve first visible draft
         if (e.Key == Key.Enter && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
         {
             var firstDraft = vm.Drafts.FirstOrDefault();
@@ -63,7 +63,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        // Ao fechar pelo 'X', oculta na bandeja do sistema (System Tray) para manter a rotina matinal ativa
+        // On 'X' close, minimize to System Tray to keep morning routine active
         if (DataContext is MainViewModel vm && vm.Settings.CloseToTray)
         {
             e.Cancel = true;

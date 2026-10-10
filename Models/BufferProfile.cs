@@ -88,9 +88,9 @@ public class BufferProfile : INotifyPropertyChanged
 
     public string QueueStatusText => _pendingUpdatesCount switch
     {
-        0 => "Fila vazia",
-        1 => "1 post na fila",
-        _ => $"{_pendingUpdatesCount} posts na fila"
+        0 => "Empty queue",
+        1 => "1 post in queue",
+        _ => $"{_pendingUpdatesCount} posts in queue"
     };
 
     public event PropertyChangedEventHandler? PropertyChanged;

@@ -18,7 +18,7 @@ public class SecurityService
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"[SecurityService] Falha ao cifrar dados com DPAPI: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"[SecurityService] Failed to encrypt data with DPAPI: {ex.Message}");
             return string.Empty;
         }
     }
@@ -36,7 +36,7 @@ public class SecurityService
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"[SecurityService] Falha ao decifrar dados com DPAPI: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"[SecurityService] Failed to decrypt data with DPAPI: {ex.Message}");
             return string.Empty;
         }
     }

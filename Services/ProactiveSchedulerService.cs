@@ -14,7 +14,7 @@ public class ProactiveSchedulerService
     private AppSettings _settings = new();
 
     public event Action<List<PostDraft>>? OnNewDraftsGenerated;
-    public string NextRunFormatted { get; private set; } = "08:30 (Amanhã)";
+    public string NextRunFormatted { get; private set; } = "08:30 (Tomorrow)";
 
     public ProactiveSchedulerService(DatabaseService db, IdeaGeneratorService generator, ToastNotificationService toast)
     {
@@ -98,11 +98,11 @@ public class ProactiveSchedulerService
             var now = DateTime.Now;
             if (now.TimeOfDay < targetTime)
             {
-                NextRunFormatted = $"Hoje às {_settings.NotificationTime}";
+                NextRunFormatted = $"Today at {_settings.NotificationTime}";
             }
             else
             {
-                NextRunFormatted = $"{_settings.NotificationTime} (Amanhã)";
+                NextRunFormatted = $"{_settings.NotificationTime} (Tomorrow)";
             }
         }
         else

@@ -2,9 +2,9 @@
 
 /**
  * Buffer MCP Server (Stdio / JSON-RPC 2.0)
- * Integrado ao Uttu Desktop Copiloto Nativo
+ * Native Social Copilot integration for Uttu Desktop
  * 
- * Suporta ferramentas completas da API do Buffer:
+ * Exposes full Buffer API tools:
  * - buffer_get_user
  * - buffer_list_profiles
  * - buffer_get_pending_updates
@@ -51,11 +51,11 @@ function sendNotification(method, params = {}) {
     process.stdout.write(JSON.stringify(payload) + '\n');
 }
 
-// HTTPS helper para API do Buffer
+// HTTPS helper for Buffer API
 function makeBufferApiRequest(path, method = 'GET', postData = null) {
     return new Promise((resolve, reject) => {
         if (!ACCESS_TOKEN) {
-            return reject(new Error('BUFFER_ACCESS_TOKEN não configurado.'));
+            return reject(new Error('BUFFER_ACCESS_TOKEN not configured.'));
         }
 
         const options = {
@@ -96,9 +96,8 @@ function makeBufferApiRequest(path, method = 'GET', postData = null) {
 }
 
 async function handleToolCall(name, args) {
-    logDebug(`Executando tool: ${name}`);
+    logDebug(`Executing tool: ${name}`);
 
-    // Atualiza token se passado nos argumentos
     if (args.access_token) {
         ACCESS_TOKEN = args.access_token;
     }
@@ -113,7 +112,7 @@ async function handleToolCall(name, args) {
                     };
                 }
             } catch (err) {
-                logDebug(`Erro ao obter usuário do Buffer: ${err.message}`);
+                logDebug(`Error fetching Buffer user: ${err.message}`);
             }
         }
 
@@ -122,9 +121,9 @@ async function handleToolCall(name, args) {
                 type: 'text',
                 text: JSON.stringify({
                     id: 'usr_sim_01',
-                    email: 'fundador@tech.com',
-                    plan: 'Pro / Team (Simulado)',
-                    timezone: 'America/Sao_Paulo'
+                    email: 'founder@tech.com',
+                    plan: 'Pro / Team (Simulated)',
+                    timezone: 'UTC'
                 })
             }]
         };
@@ -150,15 +149,14 @@ async function handleToolCall(name, args) {
                     };
                 }
             } catch (err) {
-                logDebug(`Erro ao consultar API Buffer: ${err.message}. Retornando perfis locais.`);
+                logDebug(`Error querying Buffer API: ${err.message}. Returning default profiles.`);
             }
         }
 
-        // Perfis padrão / locais (para modo offline ou teste direto)
         const mockProfiles = [
-            { id: "prof_x_01", service: "twitter", formatted_username: "@usuario_tech", avatar: "", counts: { pending: 1, sent: 12 } },
-            { id: "prof_li_02", service: "linkedin", formatted_username: "Fundador / Tech Lead", avatar: "", counts: { pending: 2, sent: 34 } },
-            { id: "prof_th_03", service: "threads", formatted_username: "@usuario_tech", avatar: "", counts: { pending: 0, sent: 5 } }
+            { id: "prof_x_01", service: "twitter", formatted_username: "@user_tech", avatar: "", counts: { pending: 1, sent: 12 } },
+            { id: "prof_li_02", service: "linkedin", formatted_username: "Founder / Tech Lead", avatar: "", counts: { pending: 2, sent: 34 } },
+            { id: "prof_th_03", service: "threads", formatted_username: "@user_tech", avatar: "", counts: { pending: 0, sent: 5 } }
         ];
 
         return {
@@ -175,7 +173,7 @@ async function handleToolCall(name, args) {
                     content: [{ type: 'text', text: JSON.stringify(updates.updates || []) }]
                 };
             } catch (err) {
-                logDebug(`Erro ao buscar updates pendentes: ${err.message}`);
+                logDebug(`Error fetching pending updates: ${err.message}`);
             }
         }
 
@@ -183,7 +181,7 @@ async function handleToolCall(name, args) {
             content: [{
                 type: 'text',
                 text: JSON.stringify([
-                    { id: 'upd_sim_01', text: 'Um produto não precisa de mais funcionalidades para ser melhor.', due_at: Math.floor(Date.now() / 1000) + 3600 }
+                    { id: 'upd_sim_01', text: 'A product does not need more features to be better.', due_at: Math.floor(Date.now() / 1000) + 3600 }
                 ])
             }]
         };
@@ -196,7 +194,7 @@ async function handleToolCall(name, args) {
         const media = args.media || null;
         const scheduledAt = args.scheduled_at || null;
 
-        logDebug(`Criando post Buffer: "${text.substring(0, 40)}..." para perfis: ${profileIds.join(', ')} (now=${now})`);
+        logDebug(`Creating Buffer post: "${text.substring(0, 40)}..." for profiles: ${profileIds.join(', ')} (now=${now})`);
 
         if (ACCESS_TOKEN && profileIds.length > 0) {
             try {
@@ -222,12 +220,12 @@ async function handleToolCall(name, args) {
                             success: true,
                             buffer_response: response,
                             update_id: response && response.updates && response.updates[0] ? response.updates[0].id : `upd_${Date.now()}`,
-                            message: now ? 'Post publicado com sucesso via Buffer.' : 'Post adicionado à fila do Buffer com sucesso.'
+                            message: now ? 'Post published immediately via Buffer.' : 'Post added to Buffer queue successfully.'
                         })
                     }]
                 };
             } catch (err) {
-                logDebug(`Erro na API do Buffer: ${err.message}. Retornando sucesso local.`);
+                logDebug(`Error in Buffer API: ${err.message}. Returning local simulation.`);
             }
         }
 
@@ -239,8 +237,8 @@ async function handleToolCall(name, args) {
                     success: true,
                     update_id: mockUpdateId,
                     message: now 
-                        ? 'Publicado imediatamente na rede social via Buffer MCP.' 
-                        : 'Agendado com sucesso na fila do Buffer via MCP.'
+                        ? 'Published immediately to social networks via Buffer MCP.' 
+                        : 'Scheduled successfully in Buffer queue via MCP.'
                 })
             }]
         };
@@ -254,15 +252,15 @@ async function handleToolCall(name, args) {
                 params.append('access_token', ACCESS_TOKEN);
                 await makeBufferApiRequest(`/1/updates/${encodeURIComponent(updateId)}/destroy.json`, 'POST', params.toString());
                 return {
-                    content: [{ type: 'text', text: JSON.stringify({ success: true, message: 'Update removido da fila do Buffer.' }) }]
+                    content: [{ type: 'text', text: JSON.stringify({ success: true, message: 'Update removed from Buffer queue.' }) }]
                 };
             } catch (err) {
-                logDebug(`Erro ao deletar update no Buffer: ${err.message}`);
+                logDebug(`Error deleting update in Buffer: ${err.message}`);
             }
         }
 
         return {
-            content: [{ type: 'text', text: JSON.stringify({ success: true, message: 'Update cancelado localmente.' }) }]
+            content: [{ type: 'text', text: JSON.stringify({ success: true, message: 'Update canceled locally.' }) }]
         };
     }
 
@@ -274,19 +272,19 @@ async function handleToolCall(name, args) {
                 params.append('access_token', ACCESS_TOKEN);
                 await makeBufferApiRequest(`/1/updates/${encodeURIComponent(updateId)}/share.json`, 'POST', params.toString());
                 return {
-                    content: [{ type: 'text', text: JSON.stringify({ success: true, message: 'Update publicado agora com sucesso.' }) }]
+                    content: [{ type: 'text', text: JSON.stringify({ success: true, message: 'Update published now successfully.' }) }]
                 };
             } catch (err) {
-                logDebug(`Erro ao compartilhar update agora: ${err.message}`);
+                logDebug(`Error sharing update now: ${err.message}`);
             }
         }
 
         return {
-            content: [{ type: 'text', text: JSON.stringify({ success: true, message: 'Publicação imediata simulada com sucesso.' }) }]
+            content: [{ type: 'text', text: JSON.stringify({ success: true, message: 'Immediate publication simulated successfully.' }) }]
         };
     }
 
-    throw new Error(`Tool não reconhecida: ${name}`);
+    throw new Error(`Unrecognized tool: ${name}`);
 }
 
 rl.on('line', async (line) => {
@@ -298,7 +296,7 @@ rl.on('line', async (line) => {
 
         if (!msg.id) {
             if (msg.method === 'notifications/initialized') {
-                logDebug('Handshake concluído.');
+                logDebug('Handshake completed.');
             }
             return;
         }
@@ -317,52 +315,52 @@ rl.on('line', async (line) => {
                 tools: [
                     {
                         name: 'buffer_get_user',
-                        description: 'Consulta informações do usuário e plano da conta Buffer.',
+                        description: 'Queries user profile and plan details from the Buffer account.',
                         inputSchema: { type: 'object', properties: {} }
                     },
                     {
                         name: 'buffer_list_profiles',
-                        description: 'Lista canais de redes sociais conectados no Buffer (X, LinkedIn, Threads, Instagram, Bluesky).',
+                        description: 'Lists social media channels connected in Buffer (X, LinkedIn, Threads, Instagram, Bluesky).',
                         inputSchema: { type: 'object', properties: {} }
                     },
                     {
                         name: 'buffer_get_pending_updates',
-                        description: 'Obtém a lista de posts pendentes/agendados na fila do Buffer para um canal específico.',
+                        description: 'Gets the list of pending/scheduled posts in the Buffer queue for a specific profile.',
                         inputSchema: {
                             type: 'object',
-                            properties: { profile_id: { type: 'string', description: 'ID do perfil no Buffer' } },
+                            properties: { profile_id: { type: 'string', description: 'Buffer profile ID' } },
                             required: ['profile_id']
                         }
                     },
                     {
                         name: 'buffer_create_update',
-                        description: 'Cria ou agenda um post na fila do Buffer para os perfis selecionados.',
+                        description: 'Creates or schedules a post in the Buffer queue for selected profiles.',
                         inputSchema: {
                             type: 'object',
                             properties: {
-                                text: { type: 'string', description: 'Conteúdo do post' },
-                                profile_ids: { type: 'array', items: { type: 'string' }, description: 'IDs dos perfis do Buffer' },
-                                now: { type: 'boolean', description: 'Se true, publica imediatamente. Se false, adiciona à fila.' },
-                                media: { type: 'object', properties: { photo: { type: 'string', description: 'URL ou caminho da imagem' } } }
+                                text: { type: 'string', description: 'Post content' },
+                                profile_ids: { type: 'array', items: { type: 'string' }, description: 'Buffer profile IDs' },
+                                now: { type: 'boolean', description: 'If true, publishes immediately. If false, queues.' },
+                                media: { type: 'object', properties: { photo: { type: 'string', description: 'Image URL or local path' } } }
                             },
                             required: ['text', 'profile_ids']
                         }
                     },
                     {
                         name: 'buffer_destroy_update',
-                        description: 'Cancela e remove um post da fila do Buffer.',
+                        description: 'Cancels and removes a post from the Buffer queue.',
                         inputSchema: {
                             type: 'object',
-                            properties: { update_id: { type: 'string', description: 'ID da atualização no Buffer' } },
+                            properties: { update_id: { type: 'string', description: 'Buffer update ID' } },
                             required: ['update_id']
                         }
                     },
                     {
                         name: 'buffer_share_now',
-                        description: 'Força o envio imediato de um post que estava na fila do Buffer.',
+                        description: 'Forces immediate publishing of a post currently in the Buffer queue.',
                         inputSchema: {
                             type: 'object',
-                            properties: { update_id: { type: 'string', description: 'ID da atualização no Buffer' } },
+                            properties: { update_id: { type: 'string', description: 'Buffer update ID' } },
                             required: ['update_id']
                         }
                     }
@@ -378,12 +376,12 @@ rl.on('line', async (line) => {
             return;
         }
 
-        sendResponse(msg.id, null, { code: -32601, message: `Método não suportado: ${msg.method}` });
+        sendResponse(msg.id, null, { code: -32601, message: `Method not supported: ${msg.method}` });
 
     } catch (err) {
-        logDebug(`Erro ao processar mensagem: ${err.message}`);
+        logDebug(`Error processing message: ${err.message}`);
         sendResponse(null, null, { code: -32700, message: `Parse error: ${err.message}` });
     }
 });
 
-logDebug('Buffer MCP Server v1.2 pronto para conexões Stdio.');
+logDebug('Buffer MCP Server v1.2 ready for Stdio connections.');

@@ -8,7 +8,7 @@ public class MemoryItem : INotifyPropertyChanged
     private int _id;
     private string _text = string.Empty;
     private bool _isActive = true;
-    private string _category = "Regras";
+    private string _category = "Rules";
     private DateTime _createdAt = DateTime.Now;
 
     public int Id

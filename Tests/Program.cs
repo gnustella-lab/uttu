@@ -11,14 +11,14 @@ class Program
     static async Task<int> Main(string[] args)
     {
         Console.WriteLine("==================================================================");
-        Console.WriteLine("  SUÍTE DE TESTES E VALIDAÇÃO NATIVA - UTTU DESKTOP (WINDOWS 10)  ");
+        Console.WriteLine("  NATIVE TEST SUITE & VALIDATION - UTTU DESKTOP (WINDOWS 10)      ");
         Console.WriteLine("==================================================================");
 
         int passed = 0;
         int failed = 0;
 
-        // TESTE 1: DPAPI
-        Console.Write("[TESTE 1/7] DPAPI SecurityService: ");
+        // TEST 1: DPAPI
+        Console.Write("[TEST 1/7] DPAPI SecurityService: ");
         try
         {
             string secret = "buf_token_secure_991827410293";
@@ -27,23 +27,23 @@ class Program
 
             if (decrypted == secret && !string.IsNullOrWhiteSpace(encrypted) && encrypted != secret)
             {
-                Console.WriteLine("OK! (Cifrado com sucesso via Windows DPAPI CurrentUser)");
+                Console.WriteLine("OK! (Successfully encrypted via Windows DPAPI CurrentUser)");
                 passed++;
             }
             else
             {
-                Console.WriteLine("FALHA: Texto decifrado não confere.");
+                Console.WriteLine("FAILED: Decrypted text does not match.");
                 failed++;
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"FALHA: {ex.Message}");
+            Console.WriteLine($"FAILED: {ex.Message}");
             failed++;
         }
 
-        // TESTE 2: SQLite
-        Console.Write("[TESTE 2/7] SQLite DatabaseService (uttu.db): ");
+        // TEST 2: SQLite
+        Console.Write("[TEST 2/7] SQLite DatabaseService (uttu.db): ");
         try
         {
             var db = new DatabaseService();
@@ -53,23 +53,23 @@ class Program
 
             if (drafts.Count > 0 && memories.Count > 0 && File.Exists(db.DatabasePath))
             {
-                Console.WriteLine($"OK! ({drafts.Count} rascunhos, {memories.Count} memórias em {db.DatabasePath})");
+                Console.WriteLine($"OK! ({drafts.Count} drafts, {memories.Count} memories in {db.DatabasePath})");
                 passed++;
             }
             else
             {
-                Console.WriteLine("FALHA: Tabelas ou dados não foram inicializados.");
+                Console.WriteLine("FAILED: Tables or records were not initialized.");
                 failed++;
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"FALHA: {ex.Message}");
+            Console.WriteLine($"FAILED: {ex.Message}");
             failed++;
         }
 
-        // TESTE 3: SkiaSharp 1600x900
-        Console.Write("[TESTE 3/7] Renderizador SkiaSharp (Cartão Flat 1600x900): ");
+        // TEST 3: SkiaSharp 1600x900
+        Console.Write("[TEST 3/7] SkiaSharp Renderer (Flat Card 1600x900): ");
         try
         {
             var renderer = new CardRendererService();
@@ -77,56 +77,56 @@ class Program
             {
                 Id = 999,
                 Platform = "X",
-                Theme = "Simplicidade em Software",
-                Content = "Um produto não precisa de mais funcionalidades para ser melhor.\n\nÀs vezes, o próximo passo é tirar uma dúvida e deixar uma decisão mais clara para o usuário."
+                Theme = "Software Simplicity",
+                Content = "A product does not need more features to be better.\n\nOften, the next step is eliminating doubt and making a decision clearer for the user."
             };
 
-            string cardPath = renderer.RenderSocialCard(post, "Fundador Tech", "@usuario_tech", darkMode: true);
+            string cardPath = renderer.RenderSocialCard(post, "Tech Founder", "@tech_founder", darkMode: true);
             if (File.Exists(cardPath))
             {
                 var fileInfo = new FileInfo(cardPath);
-                Console.WriteLine($"OK! (Gerado: {fileInfo.Length / 1024} KB em {cardPath})");
+                Console.WriteLine($"OK! (Generated: {fileInfo.Length / 1024} KB at {cardPath})");
                 passed++;
             }
             else
             {
-                Console.WriteLine("FALHA: Arquivo PNG não foi gerado.");
+                Console.WriteLine("FAILED: PNG file was not generated.");
                 failed++;
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"FALHA: {ex.Message}");
+            Console.WriteLine($"FAILED: {ex.Message}");
             failed++;
         }
 
-        // TESTE 4: Tone Analyzer
-        Console.Write("[TESTE 4/7] ToneAnalyzerService (Métricas Linguísticas): ");
+        // TEST 4: Tone Analyzer
+        Console.Write("[TEST 4/7] ToneAnalyzerService (Linguistic Metrics): ");
         try
         {
             var analyzer = new ToneAnalyzerService();
-            string samples = "Menos código é menos débito técnico. Em produção, simplicidade supera qualquer teoria de arquitetura.\n---\nNão adicione microsserviços antes de medir o gargalo real no monólito.";
+            string samples = "Less code means less technical debt. In production, simplicity outperforms theoretical architecture.\n---\nDo not introduce microservices before measuring the actual bottleneck in the monolith.";
             var profile = analyzer.AnalyzeSamples(samples);
 
             if (profile.AvgSentenceLength > 0 && !string.IsNullOrWhiteSpace(profile.HookStyle))
             {
-                Console.WriteLine($"OK! (Sentença: {profile.AvgSentenceLength} pal., Gancho: '{profile.HookStyle}', Tom: '{profile.ToneKeywords}')");
+                Console.WriteLine($"OK! (Sentence: {profile.AvgSentenceLength} words, Hook: '{profile.HookStyle}', Tone: '{profile.ToneKeywords}')");
                 passed++;
             }
             else
             {
-                Console.WriteLine("FALHA: Métricas não calculadas.");
+                Console.WriteLine("FAILED: Metrics could not be calculated.");
                 failed++;
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"FALHA: {ex.Message}");
+            Console.WriteLine($"FAILED: {ex.Message}");
             failed++;
         }
 
-        // TESTE 5: Bi-morphic Generator
-        Console.Write("[TESTE 5/7] IdeaGeneratorService (Geração Bi-mórfica X vs LinkedIn): ");
+        // TEST 5: Bi-morphic Generator
+        Console.Write("[TEST 5/7] IdeaGeneratorService (Bi-morphic Generation X vs LinkedIn): ");
         try
         {
             var generator = new IdeaGeneratorService();
@@ -141,23 +141,23 @@ class Program
 
             if (drafts.Count >= 2 && hasX && hasLi)
             {
-                Console.WriteLine($"OK! ({drafts.Count} rascunhos formulados, conformidade X <= 280 chars e LinkedIn estruturado)");
+                Console.WriteLine($"OK! ({drafts.Count} drafts generated, X <= 280 chars compliance and structured LinkedIn)");
                 passed++;
             }
             else
             {
-                Console.WriteLine("FALHA: Rascunhos bi-mórficos inválidos.");
+                Console.WriteLine("FAILED: Invalid bi-morphic drafts.");
                 failed++;
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"FALHA: {ex.Message}");
+            Console.WriteLine($"FAILED: {ex.Message}");
             failed++;
         }
 
-        // TESTE 6: Buffer Direct REST API Client
-        Console.Write("[TESTE 6/7] BufferApiService (Cliente REST Nativo HTTPS): ");
+        // TEST 6: Buffer Direct REST API Client
+        Console.Write("[TEST 6/7] BufferApiService (Native REST HTTPS Client): ");
         try
         {
             var api = new BufferApiService();
@@ -165,26 +165,26 @@ class Program
             var (userSuccess, user, userErr) = await api.GetUserAsync("invalid_token_test");
             var (profSuccess, profs, profErr) = await api.GetProfilesAsync("invalid_token_test");
 
-            // Valida que o cliente trata 401/Unauthorized adequadamente sem exceções
-            if (!userSuccess && !string.IsNullOrEmpty(userErr) && userErr.Contains("401") || userErr.Contains("inválido"))
+            // Validate that the client gracefully handles 401/Unauthorized without unhandled exceptions
+            if (!userSuccess && !string.IsNullOrEmpty(userErr) && (userErr.Contains("401") || userErr.Contains("Invalid") || userErr.Contains("Unauthorized")))
             {
-                Console.WriteLine("OK! (Validação robusta de token e endpoints da API Buffer)");
+                Console.WriteLine("OK! (Robust token validation and Buffer API error handling)");
                 passed++;
             }
             else
             {
-                Console.WriteLine($"OK! (API Buffer acessível: {userErr})");
+                Console.WriteLine($"OK! (Buffer API reachable: {userErr})");
                 passed++;
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"FALHA: {ex.Message}");
+            Console.WriteLine($"FAILED: {ex.Message}");
             failed++;
         }
 
-        // TESTE 7: Buffer MCP via Stdio
-        Console.Write("[TESTE 7/7] BufferMcpClient (Stdio JSON-RPC 2.0 + Ferramentas): ");
+        // TEST 7: Buffer MCP via Stdio
+        Console.Write("[TEST 7/7] BufferMcpClient (Stdio JSON-RPC 2.0 + Tools): ");
         try
         {
             using var mcp = new BufferMcpClient();
@@ -193,34 +193,34 @@ class Program
             {
                 var profiles = await mcp.ListProfilesAsync();
                 var user = await mcp.GetUserAsync();
-                var updateRes = await mcp.CreateUpdateAsync(new() { "prof_x_01" }, "Teste de envio via Buffer MCP Uttu", publishNow: false);
+                var updateRes = await mcp.CreateUpdateAsync(new() { "prof_x_01" }, "Test post via Uttu Buffer MCP", publishNow: false);
                 var pending = await mcp.GetPendingUpdatesAsync("prof_x_01");
 
                 if (profiles.Count > 0 && updateRes.Success)
                 {
-                    Console.WriteLine($"OK! ({profiles.Count} perfis, {pending.Count} pendentes na fila, UpdateId: {updateRes.UpdateId})");
+                    Console.WriteLine($"OK! ({profiles.Count} profiles, {pending.Count} pending in queue, UpdateId: {updateRes.UpdateId})");
                     passed++;
                 }
                 else
                 {
-                    Console.WriteLine("FALHA: Resposta MCP incompleta.");
+                    Console.WriteLine("FAILED: Incomplete MCP response.");
                     failed++;
                 }
             }
             else
             {
-                Console.WriteLine($"FALHA: Não foi possível iniciar MCP ({mcp.StatusMessage})");
+                Console.WriteLine($"FAILED: Could not start MCP ({mcp.StatusMessage})");
                 failed++;
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"FALHA: {ex.Message}");
+            Console.WriteLine($"FAILED: {ex.Message}");
             failed++;
         }
 
         Console.WriteLine("==================================================================");
-        Console.WriteLine($"  RESULTADO FINAL: {passed}/7 TESTES PASSARAM COM SUCESSO!       ");
+        Console.WriteLine($"  FINAL RESULT: {passed}/7 TESTS PASSED SUCCESSFULLY!             ");
         Console.WriteLine("==================================================================");
 
         return failed == 0 ? 0 : 1;

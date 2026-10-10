@@ -69,7 +69,7 @@ public class BufferUpdate : INotifyPropertyChanged
         set => SetField(ref _profileName, value);
     }
 
-    public string DueAtFormatted => _dueAt.HasValue ? _dueAt.Value.ToString("dd/MM/yyyy HH:mm") : "Na fila do Buffer";
+    public string DueAtFormatted => _dueAt.HasValue ? _dueAt.Value.ToString("yyyy-MM-dd HH:mm") : "In Buffer queue";
 
     public event PropertyChangedEventHandler? PropertyChanged;
 

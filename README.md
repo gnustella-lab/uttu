@@ -1,61 +1,61 @@
-# Uttu Desktop · Copiloto Nativo de Conteúdo Social
+# Uttu Desktop · Native Social Content Copilot
 
-> **100% Nativo para Windows 10 | Sem Electron / Sem WebView | Buffer MCP via Stdio | Flat Design**
+> **100% Native Windows 10 App | Zero Electron / Zero WebView | Buffer MCP via Stdio | Minimal Flat Design**
 
-O **Uttu Desktop** é um assistente autônomo local e copiloto de conteúdo social (X, LinkedIn, Threads, Bluesky, Instagram), recriado como um software de desktop 100% nativo para Windows 10 em .NET 8 e C# com WPF otimizado, inspirado diretamente no [Otto](https://otto.doti.gg/).
-
----
-
-## ⚡ Principais Características
-
-- **Consumo Mínimo de Memória RAM:** Apenas **~15 a 45 MB em standby**, inicialização instantânea em milissegundos sem qualquer sobrecarga de Chromium ou navegadores headless.
-- **Protocolo MCP (Model Context Protocol) via Stdio:** Orquestra o servidor Buffer MCP usando pipes bidirecionais JSON-RPC 2.0 (`StandardInput` / `StandardOutput`) sem expor portas TCP/IP de rede.
-- **Isolamento de Processos com Windows Job Objects:** Garante terminação imediata de processos filhos do MCP mesmo em caso de encerramento forçado do processo pai (zero processos órfãos).
-- **Segurança com Windows DPAPI:** Buffer Access Token e chaves de API nunca são salvas em texto plano, utilizando `ProtectedData.Protect` com `DataProtectionScope.CurrentUser`.
-- **Notificações Toast Interativas no Windows 10:** Disparo proativo matinal diário (ex: às 08:30) com ações interativas nativas no Action Center (`[Aprovar Agora]`, `[Abrir Uttu]`, `[Ignorar]`).
-- **Geração Bi-mórfica:** Para cada tema, gera simultaneamente a versão compacta para o **X** (máximo 280 caracteres) e estruturada para o **LinkedIn** (espaçamento vertical com gancho nas primeiras linhas).
-- **Gerador de Cartões 1600 × 900 com SkiaSharp:** Renderização gráfica 2D ultra-rápida (< 50ms) sem navegadores, produzindo cartões nos temas escuro (`#0C0D0E`) e claro (`#F3F4F6`).
-- **Calibração de Perfil de Voz:** Extração instantânea de métricas linguísticas (tamanho de sentença, densidade de pontuação, detecção de ganchos e palavras proibidas).
-- **Central de Contexto e Memórias (SQLite):** Armazenamento local rápido em `uttu.db` com modo WAL habilitado.
-- **Human-in-the-Loop Obrigatório:** Nenhuma postagem é enviada sem clique explícito ou atalho acelerador (`Ctrl+Enter`).
+**Uttu Desktop** is an autonomous local social content copilot (for X, LinkedIn, Threads, Bluesky, Instagram), built as a 100% native Windows 10 desktop application using .NET 8, C#, and optimized WPF, directly inspired by [Otto](https://otto.doti.gg/).
 
 ---
 
-## 🏛️ Arquitetura do Sistema
+## ⚡ Key Features
+
+- **Ultra-Low Memory Footprint:** Consumes only **~15 to 45 MB RAM in standby** with instantaneous millisecond startup and zero Chromium/headless browser overhead.
+- **Buffer MCP (Model Context Protocol) via Stdio:** Orchestrates the Buffer MCP server as a managed child process using bidirectional JSON-RPC 2.0 pipes (`StandardInput` / `StandardOutput`) with no exposed local TCP ports.
+- **Process Isolation with Windows Job Objects:** Enforces atomic termination of child MCP processes (`JOB_OBJECT_LIMIT_KILL_ON_CLOSE`), guaranteeing zero orphaned background processes even if the application terminates unexpectedly.
+- **Windows DPAPI Security:** Buffer Access Tokens and optional AI API keys are protected using Windows Data Protection API (`ProtectedData.Protect` with `DataProtectionScope.CurrentUser`), never stored in plaintext.
+- **Interactive Windows 10 Toast Notifications:** Proactive daily morning scheduling (e.g., at 08:30) with native Action Center interactive buttons (`[Approve Now]`, `[Open Uttu]`, `[Dismiss]`). Approving from the toast immediately queues the post via Buffer MCP without opening the main window.
+- **Bi-morphic Generation:** Formulates dual versions for each approved theme: compact for **X** (strictly under 280 characters) and structured for **LinkedIn** (vertical double-line spacing with hook in the opening lines).
+- **1600 × 900 SkiaSharp Card Renderer:** High-performance native 2D graphics rendering (< 50ms) without headless browsers, generating flat social cards in dark (`#0C0D0E`) and light (`#F3F4F6`) themes.
+- **Voice Profile Calibration:** Extracts linguistic metrics from authentic past posts (average sentence length, punctuation density, dominant hook patterns, and prohibited buzzwords).
+- **Context Engine & Guidelines (SQLite):** Fast local storage in `uttu.db` with WAL mode enabled.
+- **Mandatory Human-in-the-Loop:** No update is ever posted without explicit user confirmation or global shortcut (`Ctrl+Enter`).
+
+---
+
+## 🏛️ System Architecture
 
 ```
 +-------------------------------------------------------------------------------+
-|                       APLICATIVO WINDOWS 10 (EXE NATIVO)                      |
+|                       WINDOWS 10 APPLICATION (NATIVE EXE)                     |
 |                                                                               |
 |  +-------------------------------------------------------------------------+  |
-|  |           INTERFACE NATIVA FLAT-DESIGN (XAML / WPF)                     |  |
-|  |  - Feed de Rascunhos Pendentes (VirtualizingStackPanel)                 |  |
-|  |  - Painel de Edição de Memórias e Regras (SQLite)                       |  |
-|  |  - Mini-Editor Inline com Atalhos Globais (Ctrl+Enter, Del, Ctrl+N)     |  |
+|  |           NATIVE FLAT-DESIGN UI (XAML / WPF)                            |  |
+|  |  - Pending Drafts Feed (VirtualizingStackPanel)                         |  |
+|  |  - Memories & Guidelines Management (SQLite)                            |  |
+|  |  - Inline Mini-Editor with Global Shortcuts (Ctrl+Enter, Del, Ctrl+N)   |  |
 |  +------------------------------------+------------------------------------+  |
 |                                       |                                       |
 |  +------------------------------------v------------------------------------+  |
-|  |                     SUBSISTEMAS NATIVOS DO WINDOWS                      |  |
+|  |                     NATIVE WINDOWS SUBSYSTEMS                           |  |
 |  |  * System Tray Icon (H.NotifyIcon / TaskbarIcon)                        |  |
 |  |  * Windows Toast Notifications (Microsoft.Toolkit.Uwp.Notifications)    |  |
-|  |  * Windows DPAPI (ProtectedData.Protect com escopo do Usuário)          |  |
-|  |  * Cronômetro Proativo Diário (DispatcherTimer)                         |  |
+|  |  * Windows DPAPI (ProtectedData.Protect CurrentUser)                    |  |
+|  |  * Daily Proactive DispatcherTimer                                      |  |
 |  +------------------------------------+------------------------------------+  |
 |                                       |                                       |
 |  +------------------------------------v------------------------------------+  |
-|  |                     MOTOR DO AGENTE LOCAL (UTTU CORE)                   |  |
-|  |  * Orquestrador de Contexto e Memórias (SQLite nativo em uttu.db)       |  |
-|  |  * Analisador de Tom e Construtor de Prompts Multi-Plataforma           |  |
-|  |  * Renderizador SkiaSharp 2D (Cartões 1600x900 em %LocalAppData%\cache) |  |
+|  |                     LOCAL AGENT ENGINE (UTTU CORE)                      |  |
+|  |  * Context & Memories Orchestrator (Native SQLite uttu.db)              |  |
+|  |  * Tone Analyzer & Multi-Platform Prompt Builder                        |  |
+|  |  * SkiaSharp 2D Renderer (1600x900 Cards in %LocalAppData%\cache)       |  |
 |  +------------------------------------+------------------------------------+  |
 |                                       | Stdio (JSON-RPC 2.0)                  |
 |  +------------------------------------v------------------------------------+  |
-|  |                     BUFFER MCP RUNNER (PROCESSO FILHO)                  |  |
-|  |  * Executa Server/buffer-mcp.js ou mcp-buffer-server.exe                |  |
-|  |  * Gerenciado por Windows Job Object (JOB_OBJECT_LIMIT_KILL_ON_CLOSE)  |  |
+|  |                     BUFFER MCP RUNNER (CHILD PROCESS)                   |  |
+|  |  * Executes Server/buffer-mcp.js or mcp-buffer-server.exe               |  |
+|  |  * Governed by Windows Job Object (JOB_OBJECT_LIMIT_KILL_ON_CLOSE)      |  |
 |  +-------------------------------------------------------------------------+  |
 +---------------------------------------+---------------------------------------+
-                                        | HTTPS Seguro
+                                        | Secure HTTPS
 +---------------------------------------v---------------------------------------+
 |                       BUFFER API (api.bufferapp.com)                          |
 |             [X/Twitter]      [LinkedIn]      [Threads / Bluesky]              |
@@ -64,50 +64,57 @@ O **Uttu Desktop** é um assistente autônomo local e copiloto de conteúdo soci
 
 ---
 
-## 🚀 Como Executar
+## 🚀 Quick Start
 
-### Pré-requisitos
-- Windows 10 (Build 19041 ou superior)
-- .NET 8.0 SDK
+### Prerequisites
+- Windows 10 (Build 19041 or higher)
+- [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
+- Node.js (optional, for built-in `Server/buffer-mcp.js` runner)
 
-### Executar em Modo de Desenvolvimento
+### Running in Development Mode
 ```powershell
 dotnet run
 ```
 
-### Executar a Suíte de Testes Automatizados (6/6 Subsistemas)
+### Running the Native Automated Test Suite (7/7 Subsystems)
 ```powershell
 dotnet run --project Tests/Uttu.Tests.csproj
 ```
 
-### Publicar Executável Standalone Single-File (.exe)
+### Publishing Standalone Single-File Binary (.exe)
 ```powershell
 dotnet publish -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true
 ```
-O executável final estará disponível em:
+The compiled single-file executable will be generated at:
 `bin\Release\net8.0-windows10.0.19041.0\win-x64\publish\Uttu.exe`
 
 ---
 
-## ⌨️ Atalhos de Teclado
+## ⌨️ Keyboard Shortcuts
 
-| Atalho | Ação |
+| Shortcut | Action |
 |---|---|
-| `Ctrl + Enter` | Aprova o rascunho em foco e envia diretamente para a fila do Buffer |
-| `Delete` | Descarta o rascunho |
-| `Ctrl + N` | Foca no campo de criação de nova memória na Central de Contexto |
+| `Ctrl + Enter` | Approves focused draft and dispatches immediately to Buffer queue |
+| `Delete` | Discards draft from queue |
+| `Ctrl + N` | Instantly adds a new memory/guideline to the context engine |
 
 ---
 
-## 🎨 Especificação Flat Design (Windows 10)
+## 🎨 Windows 10 Flat Design Principles
 
-- **Cores Estritas:**
-  - Fundo da Janela: `#121212`
-  - Cartões e Painéis: `#1E1E1E`
-  - Superfícies de Entrada: `#252525`
-  - Bordas: Linhas nítidas de 1px sólido `#2B2B2B`
-  - Ação Primária: `#0078D7` (Azul Windows 10)
-  - Botão Descartar: `#D83B01` (Vermelho Plano)
-- **Tipografia:** `Segoe UI` (Interface), `Consolas` (Metadados e Contadores).
-- **Arredondamento:** Ângulos retos (`CornerRadius = 0`).
-- **Sombras:** Zero sombras projetadas ou efeitos acrílicos de alto consumo de GPU.
+- **Strict Flat Color Palette:**
+  - Window Background: `#121212`
+  - Cards & Panels: `#1E1E1E`
+  - Input Surfaces: `#252525`
+  - Borders: Crisp 1px solid `#2B2B2B`
+  - Primary Accent: `#0078D7` (Windows 10 Blue)
+  - Danger / Discard: `#D83B01` (Flat Red)
+- **Typography:** `Segoe UI` (UI elements), `Consolas` (metadata, metrics, character counts).
+- **Corners:** Razor-sharp 90-degree corners (`CornerRadius = 0`).
+- **Zero Heavy Overheads:** No GPU-draining shadows or heavy acrylic blur layers.
+
+---
+
+## 📄 License
+
+MIT License. Designed and engineered for high productivity and zero bloat on Windows 10.

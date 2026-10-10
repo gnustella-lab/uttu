@@ -10,14 +10,14 @@ public class AppSettings : INotifyPropertyChanged
     private string _bufferMcpCommand = "internal"; // "internal" or path like "node Server/buffer-mcp.js"
     private string _bufferMcpArgs = "";
     private string _bufferAccessTokenEncrypted = string.Empty;
-    private string _aiProvider = "Local Heuristic / Motor Nativo"; // "Local Heuristic / Motor Nativo", "OpenAI", "Anthropic Claude", "Google Gemini", "Ollama"
+    private string _aiProvider = "Local Heuristic / Native Engine"; // "Local Heuristic / Native Engine", "OpenAI", "Anthropic Claude", "Google Gemini", "Ollama"
     private string _aiModel = "gpt-4o-mini";
     private string _aiApiKeyEncrypted = string.Empty;
     private string _ollamaEndpoint = "http://localhost:11434";
     private string _cardTheme = "Dark";
     private bool _closeToTray = true;
-    private string _defaultAuthorHandle = "@usuario";
-    private string _defaultAuthorName = "Fundador / Criador";
+    private string _defaultAuthorHandle = "@user";
+    private string _defaultAuthorName = "Founder / Builder";
 
     public string NotificationTime
     {

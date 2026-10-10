@@ -31,7 +31,7 @@ public class IdeaGeneratorService
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[IdeaGeneratorService] Erro ao chamar LLM: {ex.Message}. Alternando para motor nativo heurístico.");
+                System.Diagnostics.Debug.WriteLine($"[IdeaGeneratorService] Error invoking LLM: {ex.Message}. Falling back to native engine.");
             }
         }
 
@@ -64,41 +64,40 @@ public class IdeaGeneratorService
         var result = new List<PostDraft>();
         var random = new Random();
 
-        // Archetypes of high-performing engineering/product thoughts
+        // Archetypes of high-performing engineering & product insights
         var archetypes = new[]
         {
             new
             {
-                Theme = "Menos código e poda de complexidade",
-                HookX = "O código mais rápido de debugar é aquele que nunca foi escrito.",
-                BodyX = "Antes de adicionar um novo microserviço ou uma dependência pesada no repositório, pergunte: dá para resolver podando código existente?\n\nMenos superfícies = menos falhas.",
-                HookLi = "A maioria das equipes sofre por excesso de arquitetura, não por falta dela.",
-                BodyLi = "Na última semana decidimos podar três telas do fluxo de onboarding e remover duas dependências antigas.\n\nO resultado?\n\n- Queda de 40% nos chamados de suporte;\n- Onboarding 3x mais rápido;\n- Zero novas linhas para manter.\n\nUm produto excelente não precisa de mais funcionalidades para crescer. Ele precisa de mais clareza."
+                Theme = "Less code and pruning complexity",
+                HookX = "The fastest code to debug is the code that was never written.",
+                BodyX = "Before adding a new microservice or heavy dependency to your repo, ask: can we solve this by pruning existing code?\n\nSmaller surface area = fewer points of failure.",
+                HookLi = "Most software teams suffer from an excess of architecture, not a lack of it.",
+                BodyLi = "Last week we decided to prune three legacy screens from our onboarding flow and delete two stale dependencies.\n\nThe result?\n\n- 40% drop in support tickets;\n- Onboarding speed tripled;\n- Zero new maintenance debt.\n\nGreat products don't need more features to scale. They need more clarity."
             },
             new
             {
-                Theme = "Entrega pragmática vs perfeccionismo teórico",
-                HookX = "Software perfeito em staging não gera nenhum valor real.",
-                BodyX = "Coloque uma versão sólida e compacta na mão do cliente hoje. O feedback de 5 minutos de uso real vale mais que 3 semanas de reunião de alinhamento.",
-                HookLi = "Teoria de arquitetura é linda no papel. Em produção, simplicidade vence sempre.",
-                BodyLi = "Já vi times gastarem meses desenhando sistemas distribuídos ultra-complexos para resolver um problema que um simples SQLite ou fila local resolveria com elegância.\n\nAntes de tentar escalar para 10 milhões de requisições:\n\n1. Entregue valor tangível hoje;\n2. Meça gargalos reais com telemetria;\n3. Otimize apenas o que dói.\n\nPragmatismo é o melhor design pattern."
+                Theme = "Pragmatic delivery vs theoretical perfection",
+                HookX = "Flawless software in staging generates zero real-world value.",
+                BodyX = "Put a solid, compact version in front of customers today. Five minutes of production feedback beats three weeks of alignment meetings.",
+                HookLi = "System design theory is beautiful on paper. In production, simplicity wins every time.",
+                BodyLi = "I've seen teams spend months designing ultra-complex distributed systems to solve problems a simple SQLite instance or local queue would handle with grace.\n\nBefore trying to architect for 10 million hypothetical requests:\n\n1. Deliver tangible value today;\n2. Measure real bottlenecks with telemetry;\n3. Optimize only where it actually hurts.\n\nPragmatism is the ultimate design pattern."
             },
             new
             {
-                Theme = "Decisões de produto human-in-the-loop",
-                HookX = "Automação sem critério humano gera ruído em escala.",
-                BodyX = "A melhor inteligência artificial não substitui a decisão final de quem conhece o contexto. Ela gera opções; você aprova com um clique.",
-                HookLi = "Por que o modelo 'Human-in-the-loop' supera qualquer automação 100% cega.",
-                BodyLi = "Criar automações é fácil. O problema é quando elas geram alucinações e conteúdo genérico sem o filtro de quem vive a rotina do negócio.\n\nO segredo da IA aplicada:\n\n- Deixe o algoritmo fazer o trabalho pesado de pesquisa e ideação;\n- Mantenha a alavanca de aprovação e refinamento nas suas mãos;\n- Publique apenas o que passa pelo seu padrão de qualidade.\n\nControle e velocidade podem andar juntos."
+                Theme = "Human-in-the-loop product decisions",
+                HookX = "Automation without human editorial judgment creates noise at scale.",
+                BodyX = "The best AI doesn't replace the final decision of the person who owns the context. It generates options; you approve with a single click.",
+                HookLi = "Why human-in-the-loop systems consistently outperform blind automation.",
+                BodyLi = "Building automations is easy. The problem is when they hallucinate generic content without the filter of someone living the day-to-day business reality.\n\nThe secret of practical AI:\n\n- Let the algorithm handle heavy ideation and synthesis;\n- Keep the approval and refinement lever firmly in your hands;\n- Ship only what meets your standard of quality.\n\nControl and velocity work best together."
             }
         };
 
-        // Pick 2 or 3 archetypes
         var selected = archetypes.OrderBy(_ => random.Next()).Take(2).ToList();
 
         foreach (var arch in selected)
         {
-            // Draft para X (compacto, <= 280 caracteres)
+            // Draft for X (compact, <= 280 characters)
             string contentX = $"{arch.HookX}\n\n{arch.BodyX}".Trim();
             if (contentX.Length > 280)
             {
@@ -114,7 +113,7 @@ public class IdeaGeneratorService
                 CreatedAt = DateTime.Now
             });
 
-            // Draft para LinkedIn (estruturado, com espaçamento vertical)
+            // Draft for LinkedIn (structured vertical spacing)
             string contentLi = $"{arch.HookLi}\n\n{arch.BodyLi}".Trim();
             result.Add(new PostDraft
             {
@@ -134,9 +133,8 @@ public class IdeaGeneratorService
         string text = draft.Content.Trim();
         string lowerInst = instruction.ToLowerInvariant();
 
-        if (lowerInst.Contains("conciso") || lowerInst.Contains("curto") || lowerInst.Contains("resum"))
+        if (lowerInst.Contains("concise") || lowerInst.Contains("short") || lowerInst.Contains("brief") || lowerInst.Contains("curto") || lowerInst.Contains("resum"))
         {
-            // Condensa removendo linhas secundárias
             var lines = text.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
             if (lines.Length > 2)
             {
@@ -145,34 +143,33 @@ public class IdeaGeneratorService
             return text;
         }
 
-        if (lowerInst.Contains("gancho") || lowerInst.Contains("impacto") || lowerInst.Contains("início"))
+        if (lowerInst.Contains("hook") || lowerInst.Contains("impact") || lowerInst.Contains("opening") || lowerInst.Contains("gancho"))
         {
             var lines = text.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries).ToList();
             if (lines.Count > 0)
             {
-                lines[0] = "A maioria das pessoas comete o mesmo erro aqui:";
+                lines[0] = "Most engineers make the exact same mistake here:";
             }
             return string.Join("\n\n", lines);
         }
 
-        if (lowerInst.Contains("pergunta") || lowerInst.Contains("reflex"))
+        if (lowerInst.Contains("question") || lowerInst.Contains("reflective") || lowerInst.Contains("pergunta"))
         {
-            return $"{text}\n\nConcorda ou sua experiência em produção foi diferente?";
+            return $"{text}\n\nDo you agree, or has your production experience differed?";
         }
 
-        if (lowerInst.Contains("número") || lowerInst.Contains("dado") || lowerInst.Contains("métrica"))
+        if (lowerInst.Contains("data") || lowerInst.Contains("number") || lowerInst.Contains("metric") || lowerInst.Contains("métrica"))
         {
-            return $"{text}\n\nOs dados não mentem: 80% do ganho de produtividade veio de cortar o que não importava.";
+            return $"{text}\n\nThe telemetry speaks for itself: 80% of productivity gains came from cutting what didn't matter.";
         }
 
-        // Adiciona nota de refinamento genérica
-        return $"{text}\n\n[Refinado: {instruction}]";
+        return $"{text}\n\n[Refined: {instruction}]";
     }
 
     private async Task<List<PostDraft>?> TryGenerateWithLlmAsync(string apiKey, List<MemoryItem> activeMemories, VoiceProfile voiceProfile, AppSettings settings)
     {
         string prompt = BuildSystemPrompt(activeMemories, voiceProfile);
-        string userPrompt = "Gere 2 temas de conteúdo social com versão para o X (máximo 280 caracteres) e LinkedIn (estruturado com quebras verticais). Retorne em formato JSON válido.";
+        string userPrompt = "Generate 2 social content themes with versions for X (max 280 characters) and LinkedIn (structured with vertical line breaks). Return valid JSON.";
 
         if (settings.AiProvider.Contains("OpenAI", StringComparison.OrdinalIgnoreCase) || settings.AiProvider.Contains("Groq", StringComparison.OrdinalIgnoreCase))
         {
@@ -212,8 +209,8 @@ public class IdeaGeneratorService
                 ["model"] = string.IsNullOrWhiteSpace(settings.AiModel) ? "gpt-4o-mini" : settings.AiModel,
                 ["messages"] = new JsonArray
                 {
-                    new JsonObject { ["role"] = "system", ["content"] = "Você é o assistente Uttu. Refine o texto para a rede social informada seguindo rigorosamente a instrução. Retorne apenas o texto refinado sem aspas ou explicações." },
-                    new JsonObject { ["role"] = "user", ["content"] = $"Rede: {draft.Platform}\nTexto Original:\n{draft.Content}\n\nInstrução: {instruction}" }
+                    new JsonObject { ["role"] = "system", ["content"] = "You are Uttu, an autonomous social content copilot. Refine the text for the specified social platform strictly following the given instruction. Return only the refined text without surrounding quotes or explanations." },
+                    new JsonObject { ["role"] = "user", ["content"] = $"Platform: {draft.Platform}\nOriginal Text:\n{draft.Content}\n\nInstruction: {instruction}" }
                 },
                 ["temperature"] = 0.5
             };
@@ -238,22 +235,22 @@ public class IdeaGeneratorService
     private string BuildSystemPrompt(List<MemoryItem> memories, VoiceProfile profile)
     {
         var sb = new StringBuilder();
-        sb.AppendLine("Você é o Uttu, copiloto nativo de conteúdo social.");
-        sb.AppendLine("Sua missão é gerar ideias de posts altamente pragmáticos, focados em engenharia de software e produtos digitais.");
+        sb.AppendLine("You are Uttu, a native desktop social content copilot.");
+        sb.AppendLine("Your mission is to generate highly pragmatic, authentic posts focused on software engineering and digital products.");
         sb.AppendLine();
-        sb.AppendLine("DIRETRIZES DE ESTILO E VOZ:");
-        sb.AppendLine($"- Tamanho médio de sentença desejado: {profile.AvgSentenceLength} palavras.");
-        sb.AppendLine($"- Estilo de gancho: {profile.HookStyle}.");
-        sb.AppendLine($"- Tom predominante: {profile.ToneKeywords}.");
-        sb.AppendLine($"- Palavras e clichês estritamente proibidos: {profile.ProhibitedWords}.");
+        sb.AppendLine("VOICE AND STYLE GUIDELINES:");
+        sb.AppendLine($"- Target sentence length: {profile.AvgSentenceLength} words per sentence.");
+        sb.AppendLine($"- Hook style: {profile.HookStyle}.");
+        sb.AppendLine($"- Primary tone: {profile.ToneKeywords}.");
+        sb.AppendLine($"- Strictly prohibited buzzwords & clichés: {profile.ProhibitedWords}.");
         sb.AppendLine();
-        sb.AppendLine("MEMÓRIAS ATIVAS DO USUÁRIO:");
+        sb.AppendLine("ACTIVE USER MEMORIES & RULES:");
         foreach (var m in memories.Where(x => x.IsActive))
         {
             sb.AppendLine($"- [{m.Category}] {m.Text}");
         }
         sb.AppendLine();
-        sb.AppendLine("FORMATO DE RESPOSTA (JSON):");
+        sb.AppendLine("RESPONSE FORMAT (JSON):");
         sb.AppendLine("""
         {
             "drafts": [
@@ -282,7 +279,7 @@ public class IdeaGeneratorService
                 {
                     list.Add(new PostDraft
                     {
-                        Theme = d.GetProperty("theme").GetString() ?? "Tema",
+                        Theme = d.GetProperty("theme").GetString() ?? "Theme",
                         Platform = d.GetProperty("platform").GetString() ?? "X",
                         Content = d.GetProperty("content").GetString() ?? "",
                         Status = "Draft",
